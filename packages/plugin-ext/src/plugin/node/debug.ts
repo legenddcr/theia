@@ -170,7 +170,7 @@ export class DebugExtImpl implements DebugExt {
     async $createDebugSession(contributionId: string, debugConfiguration: theia.DebugConfiguration): Promise<string> {
         const adapterContribution = this.debugAdapterContributions.get(contributionId);
         if (!adapterContribution) {
-            throw new Error('Debug adapter contribution not found');
+            throw new Error(`Debug adapter contribution '${contributionId}' not found, configuration type: ${debugConfiguration.type}`);
         }
 
         const packageContribution = this.packageContributions.get(contributionId);

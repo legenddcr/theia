@@ -5819,9 +5819,9 @@ declare module '@theia/plugin' {
      * Configuration for a debug session.
      */
     export interface DebugConfiguration {
-		/**
-		 * The type of the debug session.
-		 */
+        /**
+         * The type of the debug session.
+         */
         type: string;
 
 		/**
@@ -5863,7 +5863,7 @@ declare module '@theia/plugin' {
 		/**
 		 * Send a custom request to the debug adapter.
 		 */
-        customRequest(command: string, args?: any): Thenable<any>;
+        customRequest(command: string, args?: any): PromiseLike<any>;
     }
 
 	/**
