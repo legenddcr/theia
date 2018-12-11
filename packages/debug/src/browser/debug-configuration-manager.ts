@@ -28,10 +28,10 @@ import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { MonacoEditor } from '@theia/monaco/lib/browser/monaco-editor';
 import { QuickPickService, StorageService } from '@theia/core/lib/browser';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
-import { DebugService } from '../common/debug-service';
 import { DebugConfiguration } from '../common/debug-configuration';
 import { DebugConfigurationModel } from './debug-configuration-model';
 import { DebugSessionOptions } from './debug-session-options';
+import { DebugContributionManager } from './debug-contribution-manager';
 
 @injectable()
 export class DebugConfigurationManager {
@@ -42,8 +42,8 @@ export class DebugConfigurationManager {
     protected readonly workspaceService: WorkspaceService;
     @inject(EditorManager)
     protected readonly editorManager: EditorManager;
-    @inject(DebugService)
-    protected readonly debug: DebugService;
+    @inject(DebugContributionManager)
+    protected readonly debugManager: DebugContributionManager;
     @inject(QuickPickService)
     protected readonly quickPick: QuickPickService;
 
@@ -104,7 +104,7 @@ export class DebugConfigurationManager {
         return this.getSupported();
     }
     protected async getSupported(): Promise<IterableIterator<DebugSessionOptions>> {
-        const [, debugTypes] = await Promise.all([await this.initialized, this.debug.debugTypes()]);
+        const [, debugTypes] = await Promise.all([await this.initialized, this.debugManager.debugTypes()]);
         return this.doGetSupported(new Set(debugTypes));
     }
     protected *doGetSupported(debugTypes: Set<string>): IterableIterator<DebugSessionOptions> {
@@ -231,7 +231,7 @@ export class DebugConfigurationManager {
     }
     protected async doCreate(model: DebugConfigurationModel): Promise<void> {
         const debugType = await this.selectDebugType();
-        const configurations = debugType ? await this.debug.provideDebugConfigurations(debugType, model.workspaceFolderUri) : [];
+        const configurations = debugType ? await this.debugManager.provideDebugConfigurations(debugType, model.workspaceFolderUri) : [];
         const content = this.getInitialConfigurationContent(configurations);
         await model.save(content);
     }
@@ -252,7 +252,7 @@ export class DebugConfigurationManager {
             return undefined;
         }
         const { languageId } = widget.editor.document;
-        const debuggers = await this.debug.getDebuggersForLanguage(languageId);
+        const debuggers = await this.debugManager.getDebuggersForLanguage(languageId);
         return this.quickPick.show(debuggers.map(
             ({ label, type }) => ({ label, value: type }),
             { placeholder: 'Select Environment' })

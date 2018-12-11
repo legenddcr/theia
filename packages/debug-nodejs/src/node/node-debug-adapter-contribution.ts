@@ -20,19 +20,41 @@ import { injectable } from 'inversify';
 // tslint:disable-next-line:no-implicit-dependencies
 import { FileUri } from '@theia/core/lib/node';
 import { DebugConfiguration } from '@theia/debug/lib/common/debug-configuration';
-import { AbstractVSCodeDebugAdapterContribution } from '@theia/debug/lib/node/vscode/vscode-debug-adapter-contribution';
+import { VSCodeDebugAdapterContribution } from '@theia/debug/lib/node/vscode/vscode-debug-adapter-contribution';
+import { DebugAdapterContribution, DebugAdapterExecutable } from '@theia/debug/lib/node/debug-model';
+import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 
 export const INSPECTOR_PORT_DEFAULT = 9229;
 export const LEGACY_PORT_DEFAULT = 5858;
 
 @injectable()
-export class NodeDebugAdapterContribution extends AbstractVSCodeDebugAdapterContribution {
+export class NodeDebugAdapterContribution implements DebugAdapterContribution {
+    readonly type: string;
+    private readonly delegated: VSCodeDebugAdapterContribution;
 
     constructor() {
-        super(
-            'node',
-            path.join(__dirname, '../../download/node-debug/extension')
-        );
+        this.type = 'node';
+        this.delegated = new VSCodeDebugAdapterContribution(this.type, path.join(__dirname, '../../download/node-debug/extension'));
+    }
+
+    get label(): Promise<string | undefined> {
+        return this.delegated.label;
+    }
+
+    get languages(): Promise<string[] | undefined> {
+        return this.delegated.languages;
+    }
+
+    async getSchemaAttributes(): Promise<IJSONSchema[]> {
+        return this.delegated.getSchemaAttributes();
+    }
+
+    async getConfigurationSnippets?(): Promise<IJSONSchemaSnippet[]> {
+        return this.delegated.getConfigurationSnippets();
+    }
+
+    async provideDebugAdapterExecutable(): Promise<DebugAdapterExecutable | undefined> {
+        return this.delegated.provideDebugAdapterExecutable();
     }
 
     // TODO: construct based on package.json of the given workspace
@@ -93,13 +115,32 @@ export class NodeDebugAdapterContribution extends AbstractVSCodeDebugAdapterCont
 }
 
 @injectable()
-export class Node2DebugAdapterContribution extends AbstractVSCodeDebugAdapterContribution {
+export class Node2DebugAdapterContribution implements DebugAdapterContribution {
+    readonly type: string;
+    private readonly delegated: VSCodeDebugAdapterContribution;
 
     constructor() {
-        super(
-            'node2',
-            path.join(__dirname, '../../download/node-debug2/extension')
-        );
+        this.type = 'node2';
+        this.delegated = new VSCodeDebugAdapterContribution(this.type, path.join(__dirname, '../../download/node-debug2/extension'));
     }
 
+    get label(): Promise<string | undefined> {
+        return this.delegated.label;
+    }
+
+    get languages(): Promise<string[] | undefined> {
+        return this.delegated.languages;
+    }
+
+    async getSchemaAttributes(): Promise<IJSONSchema[]> {
+        return this.delegated.getSchemaAttributes();
+    }
+
+    async getConfigurationSnippets?(): Promise<IJSONSchemaSnippet[]> {
+        return this.delegated.getConfigurationSnippets();
+    }
+
+    async provideDebugAdapterExecutable(): Promise<DebugAdapterExecutable | undefined> {
+        return this.delegated.provideDebugAdapterExecutable();
+    }
 }

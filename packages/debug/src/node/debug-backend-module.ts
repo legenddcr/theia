@@ -23,7 +23,7 @@ import {
 import {
     LaunchBasedDebugAdapterFactory,
     DebugAdapterSessionFactoryImpl
-} from './debug-adapter';
+} from './debug-adapter-factory';
 import { MessagingService } from '@theia/core/lib/node/messaging/messaging-service';
 import { ConnectionContainerModule } from '@theia/core/lib/node/messaging/connection-container-module';
 import {

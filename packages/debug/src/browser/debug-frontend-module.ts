@@ -33,8 +33,10 @@ import { DebugViewOptions } from './view/debug-view-model';
 import { DebugSessionWidget, DebugSessionWidgetFactory } from './view/debug-session-widget';
 import { InDebugModeContext } from './debug-keybinding-contexts';
 import { DebugEditorModelFactory, DebugEditorModel } from './editor/debug-editor-model';
+import { DebugContributionManager } from './debug-contribution-manager';
 import './debug-monaco-contribution';
 import { bindDebugPreferences } from './debug-preferences';
+import { DebugSessionContributionRegistry } from './debug-session-contribution-registry';
 
 export default new ContainerModule((bind: interfaces.Bind) => {
     bindContributionProvider(bind, DebugSessionContribution);
@@ -56,6 +58,7 @@ export default new ContainerModule((bind: interfaces.Bind) => {
     })).inSingletonScope();
     DebugConsoleContribution.bindContribution(bind);
 
+    bind(DebugContributionManager).toSelf().inSingletonScope();
     bind(DebugConfigurationManager).toSelf().inSingletonScope();
 
     bind(DebugService).toDynamicValue(context => WebSocketConnectionProvider.createProxy(context.container, DebugPath)).inSingletonScope();
@@ -65,6 +68,7 @@ export default new ContainerModule((bind: interfaces.Bind) => {
     bind(KeybindingContext).to(InDebugModeContext).inSingletonScope();
     bindViewContribution(bind, DebugFrontendApplicationContribution);
     bind(FrontendApplicationContribution).toService(DebugFrontendApplicationContribution);
+    bind(DebugSessionContributionRegistry).toSelf().inSingletonScope();
 
     bindDebugPreferences(bind);
 });

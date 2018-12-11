@@ -14,12 +14,12 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import * as fs from 'fs-extra';
+import * as fs from 'fs';
 import * as path from 'path';
-import { injectable, unmanaged } from 'inversify';
-import { DebugAdapterContribution, DebugAdapterExecutable } from '../debug-model';
+import { DebugAdapterExecutable, DebugAdapterContribution } from '../debug-model';
 import { isWindows, isOSX } from '@theia/core/lib/common/os';
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
+import { deepClone } from '@theia/core/lib/common/objects';
 
 namespace nls {
     export function localize(key: string, _default: string) {
@@ -74,8 +74,7 @@ export namespace VSCodeDebuggerContribution {
     }
 }
 
-@injectable()
-export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAdapterContribution {
+export class VSCodeDebugAdapterContribution implements DebugAdapterContribution {
 
     protected readonly pckPath: string;
     protected readonly pck: Promise<VSCodeExtensionPackage>;
@@ -85,8 +84,8 @@ export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAda
     readonly languages: Promise<string[] | undefined>;
 
     constructor(
-        @unmanaged() readonly type: string,
-        @unmanaged() readonly extensionPath: string
+        readonly type: string,
+        readonly extensionPath: string
     ) {
         this.pckPath = path.join(this.extensionPath, 'package.json');
         this.pck = this.parse();
@@ -97,7 +96,7 @@ export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAda
     }
 
     protected async parse(): Promise<VSCodeExtensionPackage> {
-        let text = (await fs.readFile(this.pckPath)).toString();
+        let text = (await fs.readFileSync(this.pckPath)).toString();
 
         const nlsPath = path.join(this.extensionPath, 'package.nls.json');
         if (fs.existsSync(nlsPath)) {
@@ -134,7 +133,7 @@ export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAda
         const taskSchema = {}; // TODO
         const { configurationAttributes } = debuggerContribution;
         return Object.keys(configurationAttributes).map(request => {
-            const attributes: IJSONSchema = configurationAttributes[request];
+            const attributes: IJSONSchema = deepClone(configurationAttributes[request]);
             const defaultRequired = ['name', 'type', 'request'];
             attributes.required = attributes.required && attributes.required.length ? defaultRequired.concat(attributes.required) : defaultRequired;
             attributes.additionalProperties = false;
@@ -235,6 +234,10 @@ export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAda
             command,
             args
         };
+    }
+
+    async getExtensionPackage(): Promise<VSCodeExtensionPackage> {
+        return this.pck;
     }
 
 }

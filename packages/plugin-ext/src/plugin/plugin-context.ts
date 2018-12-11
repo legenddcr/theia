@@ -82,7 +82,10 @@ import {
     TaskPanelKind,
     TaskRevealKind,
     TaskGroup,
-    Task
+    Task,
+    Breakpoint,
+    SourceBreakpoint,
+    FunctionBreakpoint
 } from './types-impl';
 import { SymbolKind } from '../api/model';
 import { EditorsAndDocumentsExtImpl } from './editors-and-documents';
@@ -104,11 +107,14 @@ import { TreeViewsExtImpl } from './tree/tree-views';
 import { ConnectionExtImpl } from './connection-ext';
 import { WebviewsExtImpl } from './webviews';
 import { TasksExtImpl } from './tasks/tasks';
+import { DebugExtImpl } from './node/debug';
+import { PluginPackageDebuggersContribution } from '../common';
 
 export function createAPIFactory(
     rpc: RPCProtocol,
     pluginManager: PluginManager,
     envExt: EnvExtImpl,
+    debugExt: DebugExtImpl,
     preferenceRegistryExt: PreferenceRegistryExtImpl): PluginAPIFactory {
 
     const commandRegistry = rpc.set(MAIN_RPC_CONTEXT.COMMAND_REGISTRY_EXT, new CommandRegistryImpl(rpc));
@@ -129,7 +135,10 @@ export function createAPIFactory(
     const treeViewsExt = rpc.set(MAIN_RPC_CONTEXT.TREE_VIEWS_EXT, new TreeViewsExtImpl(rpc, commandRegistry));
     const webviewExt = rpc.set(MAIN_RPC_CONTEXT.WEBVIEWS_EXT, new WebviewsExtImpl(rpc));
     const tasksExt = rpc.set(MAIN_RPC_CONTEXT.TASKS_EXT, new TasksExtImpl(rpc));
-    rpc.set(MAIN_RPC_CONTEXT.CONNECTION_EXT, new ConnectionExtImpl(rpc));
+    const connectionExt = rpc.set(MAIN_RPC_CONTEXT.CONNECTION_EXT, new ConnectionExtImpl(rpc));
+
+    debugExt.inject(connectionExt, commandRegistry);
+    rpc.set(MAIN_RPC_CONTEXT.DEBUG_EXT, debugExt);
 
     return function (plugin: InternalPlugin): typeof theia {
         const commands: typeof theia.commands = {
@@ -479,17 +488,51 @@ export function createAPIFactory(
         };
 
         const debug: typeof theia.debug = {
-            onDidChangeActiveDebugSession(listener, thisArg?, disposables?) {
-                // FIXME: to implement
-                return new Disposable(() => { });
+            get activeDebugSession(): theia.DebugSession | undefined {
+                return debugExt.activeDebugSession;
             },
-            onDidTerminateDebugSession(listener, thisArg?, disposables?) {
-                // FIXME: to implement
-                return new Disposable(() => { });
+            get activeDebugConsole(): theia.DebugConsole {
+                return debugExt.activeDebugConsole;
             },
-            registerDebugConfigurationProvider(debugType: string, provider: theia.DebugConfigurationProvider): theia.Disposable {
-                // FIXME: to implement
-                return new Disposable(() => { });
+            get breakpoints(): theia.Breakpoint[] {
+                return debugExt.breakpoints;
+            },
+            get onDidChangeActiveDebugSession(): theia.Event<theia.DebugSession | undefined> {
+                return debugExt.onDidChangeActiveDebugSession;
+            },
+            get onDidStartDebugSession(): theia.Event<theia.DebugSession> {
+                return debugExt.onDidStartDebugSession;
+            },
+            get onDidReceiveDebugSessionCustomEvent(): theia.Event<theia.DebugSessionCustomEvent> {
+                return debugExt.onDidReceiveDebugSessionCustomEvent;
+            },
+            get onDidTerminateDebugSession(): theia.Event<theia.DebugSession> {
+                return debugExt.onDidTerminateDebugSession;
+            },
+            get onDidChangeBreakpoints(): theia.Event<theia.BreakpointsChangeEvent> {
+                return debugExt.onDidChangeBreakpoints;
+            },
+            registerDebugConfigurationProvider(debugType: string, provider: theia.DebugConfigurationProvider): Disposable {
+                const debuggersContribution = plugin.rawModel.contributes && plugin.rawModel.contributes.debuggers;
+                if (debuggersContribution) {
+                    const contribution = debuggersContribution.filter((value: PluginPackageDebuggersContribution) => value.type === debugType)[0];
+                    if (contribution) {
+                        console.info(`Registered debug contribution provider: '${debugType}'`);
+                        return debugExt.registerDebugConfigurationProvider(debugType, provider, contribution, plugin.pluginFolder);
+                    }
+                }
+
+                console.warn(`There is no package contribution with type ${debugType}`);
+                return Disposable.create(() => { });
+            },
+            startDebugging(folder: theia.WorkspaceFolder | undefined, nameOrConfiguration: string | theia.DebugConfiguration): Thenable<boolean> {
+                return debugExt.startDebugging(folder, nameOrConfiguration);
+            },
+            addBreakpoints(breakpoints: theia.Breakpoint[]): void {
+                debugExt.addBreakpoints(breakpoints);
+            },
+            removeBreakpoints(breakpoints: theia.Breakpoint[]): void {
+                debugExt.removeBreakpoints(breakpoints);
             }
         };
 
@@ -571,7 +614,10 @@ export function createAPIFactory(
             TaskRevealKind,
             TaskPanelKind,
             TaskGroup,
-            Task
+            Task,
+            Breakpoint,
+            SourceBreakpoint,
+            FunctionBreakpoint
         };
     };
 }

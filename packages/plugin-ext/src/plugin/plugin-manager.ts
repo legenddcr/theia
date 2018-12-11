@@ -113,6 +113,8 @@ export class PluginManagerExtImpl implements PluginManagerExt, PluginManager {
         const pluginContext: theia.PluginContext = {
             extensionPath: plugin.pluginFolder,
             subscriptions: subscriptions,
+            globalState: new MementoImpl(),
+            workspaceState: new MementoImpl(),
             asAbsolutePath: asAbsolutePath
         };
 
@@ -169,4 +171,18 @@ export class PluginManagerExtImpl implements PluginManagerExt, PluginManager {
 function getGlobal() {
     // tslint:disable-next-line:no-null-keyword
     return typeof self === 'undefined' ? typeof global === 'undefined' ? null : global : self;
+}
+
+class MementoImpl<T> implements theia.Memento {
+    private readonly m = new Map<string, T>();
+
+    get(key: string, defaultValue?: T): T | undefined {
+        const value = this.m.get(key);
+        return value || defaultValue;
+    }
+
+    update(key: string, value: T): Thenable<void> {
+        this.m.set(key, value);
+        return Promise.resolve(undefined);
+    }
 }

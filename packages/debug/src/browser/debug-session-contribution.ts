@@ -25,6 +25,9 @@ import { BreakpointManager } from './breakpoint/breakpoint-manager';
 import { DebugSessionOptions } from './debug-session-options';
 import { OutputChannelManager, OutputChannel } from '@theia/output/lib/common/output-channel';
 import { DebugPreferences } from './debug-preferences';
+import { DebugSessionConnection } from './debug-session-connection';
+import { IWebSocket } from 'vscode-ws-jsonrpc/lib/socket/socket';
+import { DebugAdapterPath } from '../common/debug-service';
 
 /**
  * DebugSessionContribution symbol for DI.
@@ -62,25 +65,18 @@ export class DefaultDebugSessionFactory implements DebugSessionFactory {
 
     @inject(WebSocketConnectionProvider)
     protected readonly connectionProvider: WebSocketConnectionProvider;
-
     @inject(TerminalService)
     protected readonly terminalService: TerminalService;
-
     @inject(EditorManager)
     protected readonly editorManager: EditorManager;
-
     @inject(BreakpointManager)
     protected readonly breakpoints: BreakpointManager;
-
     @inject(LabelProvider)
     protected readonly labelProvider: LabelProvider;
-
     @inject(MessageClient)
     protected readonly messages: MessageClient;
-
     @inject(OutputChannelManager)
     protected readonly outputChannelManager: OutputChannelManager;
-
     @inject(DebugPreferences)
     protected readonly debugPreferences: DebugPreferences;
 
@@ -93,10 +89,19 @@ export class DefaultDebugSessionFactory implements DebugSessionFactory {
             traceOutputChannel = this.outputChannelManager.getChannel('Debug adapters');
         }
 
+        const connection = new DebugSessionConnection(
+            sessionId,
+            () => new Promise<IWebSocket>(resolve =>
+                this.connectionProvider.openChannel(`${DebugAdapterPath}/${sessionId}`, channel => {
+                    resolve(channel);
+                }, { reconnecting: false })
+            ),
+            traceOutputChannel);
+
         return new DebugSession(
             sessionId,
             options,
-            this.connectionProvider,
+            connection,
             this.terminalService,
             this.editorManager,
             this.breakpoints,

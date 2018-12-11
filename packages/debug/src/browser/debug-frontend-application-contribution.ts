@@ -18,8 +18,7 @@ import { AbstractViewContribution, ApplicationShell, KeybindingRegistry } from '
 import { injectable, inject } from 'inversify';
 import { JsonSchemaStore } from '@theia/core/lib/browser/json-schema-store';
 import { ThemeService } from '@theia/core/lib/browser/theming';
-import { InMemoryResources, MenuModelRegistry, CommandRegistry, MAIN_MENU_BAR, Command } from '@theia/core/lib/common';
-import { DebugService } from '../common/debug-service';
+import { InMemoryResources, MenuModelRegistry, CommandRegistry, MAIN_MENU_BAR, Command, deepClone } from '@theia/core/lib/common';
 import { DebugViewLocation } from '../common/debug-configuration';
 import { IJSONSchema } from '@theia/core/lib/common/json-schema';
 import { EditorKeybindingContexts } from '@theia/editor/lib/browser';
@@ -42,6 +41,7 @@ import { DebugKeybindingContexts } from './debug-keybinding-contexts';
 import { DebugEditorModel } from './editor/debug-editor-model';
 import { DebugEditorService } from './editor/debug-editor-service';
 import { DebugConsoleContribution } from './console/debug-console-contribution';
+import { DebugContributionManager } from './debug-contribution-manager';
 
 export namespace DebugMenus {
     export const DEBUG = [...MAIN_MENU_BAR, '6_debug'];
@@ -269,7 +269,7 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
 
     @inject(JsonSchemaStore) protected readonly jsonSchemaStore: JsonSchemaStore;
     @inject(InMemoryResources) protected readonly inmemoryResources: InMemoryResources;
-    @inject(DebugService) protected readonly debugService: DebugService;
+    @inject(DebugContributionManager) protected readonly debug: DebugContributionManager;
 
     @inject(DebugSessionManager)
     protected readonly manager: DebugSessionManager;
@@ -336,45 +336,57 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
                 this.openSession(session);
             }
         });
-        this.debugService.debugTypes().then(async types => {
-            const launchSchemaUrl = new URI('vscode://debug/launch.json');
-            const attributePromises = types.map(type => this.debugService.getSchemaAttributes(type));
-            const schema: IJSONSchema = {
-                ...launchSchema
-            };
-            const items = (<IJSONSchema>launchSchema!.properties!['configurations'].items);
-            for (const attributes of await Promise.all(attributePromises)) {
-                for (const attribute of attributes) {
-                    attribute.properties = {
-                        'debugViewLocation': {
-                            enum: ['default', 'left', 'right', 'bottom'],
-                            default: 'default',
-                            description: 'Controls the location of the debug view.'
-                        },
-                        'openDebug': {
-                            enum: ['neverOpen', 'openOnSessionStart', 'openOnFirstSessionStart', 'openOnDebugBreak'],
-                            default: 'openOnSessionStart',
-                            description: 'Controls when the debug view should open.'
-                        },
-                        'internalConsoleOptions': {
-                            enum: ['neverOpen', 'openOnSessionStart', 'openOnFirstSessionStart'],
-                            default: 'openOnFirstSessionStart',
-                            description: 'Controls when the internal debug console should open.'
-                        },
-                        ...attribute.properties
-                    };
-                    items.oneOf!.push(attribute);
-                }
+        this.debug.debugTypes().then(async () => this.doUpdateDebugTypes());
+        this.debug.onDidContributionAdd(async () => this.doUpdateDebugTypes());
+        this.debug.onDidContributionDelete(async () => this.doUpdateDebugTypes());
+
+        this.configurations.load();
+        await this.breakpointManager.load();
+    }
+
+    private async doUpdateDebugTypes(): Promise<void> {
+        const types = await this.debug.debugTypes();
+
+        const launchSchemaUrl = new URI('vscode://debug/launch.json');
+        const schema = { ...deepClone(launchSchema) };
+        const items = (<IJSONSchema>schema!.properties!['configurations'].items);
+
+        const attributePromises = types.map(type => this.debug.getSchemaAttributes(type));
+        for (const attributes of await Promise.all(attributePromises)) {
+            for (const attribute of attributes) {
+                attribute.properties = {
+                    'debugViewLocation': {
+                        enum: ['default', 'left', 'right', 'bottom'],
+                        default: 'default',
+                        description: 'Controls the location of the debug view.'
+                    },
+                    'openDebug': {
+                        enum: ['neverOpen', 'openOnSessionStart', 'openOnFirstSessionStart', 'openOnDebugBreak'],
+                        default: 'openOnSessionStart',
+                        description: 'Controls when the debug view should open.'
+                    },
+                    'internalConsoleOptions': {
+                        enum: ['neverOpen', 'openOnSessionStart', 'openOnFirstSessionStart'],
+                        default: 'openOnFirstSessionStart',
+                        description: 'Controls when the internal debug console should open.'
+                    },
+                    ...attribute.properties
+                };
+                items.oneOf!.push(attribute);
             }
-            items.defaultSnippets!.push(...await this.debugService.getConfigurationSnippets());
-            this.inmemoryResources.add(launchSchemaUrl, JSON.stringify(schema));
+        }
+        items.defaultSnippets!.push(...await this.debug.getConfigurationSnippets());
+
+        const contents = JSON.stringify(schema);
+        try {
+            await this.inmemoryResources.update(launchSchemaUrl, contents);
+        } catch (e) {
+            this.inmemoryResources.add(launchSchemaUrl, contents);
             this.jsonSchemaStore.registerSchema({
                 fileMatch: ['launch.json'],
                 url: launchSchemaUrl.toString()
             });
-        });
-        this.configurations.load();
-        await this.breakpointManager.load();
+        }
     }
 
     onStop(): void {

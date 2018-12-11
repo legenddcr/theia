@@ -30,7 +30,9 @@ import { JavaExtensionContribution } from '@theia/java/lib/node';
 import { MessageService, CommandService } from '@theia/core/lib/common';
 // tslint:disable-next-line:no-implicit-dependencies
 import { QuickPickService, QuickPickItem } from '@theia/core/lib/common/quick-pick-service';
-import { AbstractVSCodeDebugAdapterContribution } from '@theia/debug/lib/node/vscode/vscode-debug-adapter-contribution';
+import { DebugAdapterContribution, DebugAdapterExecutable } from '@theia/debug/lib/node/debug-model';
+import { VSCodeDebugAdapterContribution } from '@theia/debug/lib/node/vscode/vscode-debug-adapter-contribution';
+import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/src/common/json-schema';
 
 export namespace VSCodeJavaDebugCommands {
     export const COMPILE_WORKSPACE = 'java.workspace.compile';
@@ -58,22 +60,43 @@ interface LaunchValidationResponse {
 }
 
 @injectable()
-export class JavaDebugExtensionContribution extends AbstractVSCodeDebugAdapterContribution implements JavaExtensionContribution {
+export class JavaDebugExtensionContribution implements JavaExtensionContribution, DebugAdapterContribution {
+
+    readonly type: string;
+    private readonly delegated: VSCodeDebugAdapterContribution;
 
     constructor() {
-        super(
-            'java',
-            path.join(__dirname, '../../download/java-debug/extension')
-        );
+        this.type = 'java';
+        this.delegated = new VSCodeDebugAdapterContribution(this.type, path.join(__dirname, '../../download/java-debug/extension'));
+    }
+
+    get label(): Promise<string | undefined> {
+        return this.delegated.label;
+    }
+
+    get languages(): Promise<string[] | undefined> {
+        return this.delegated.languages;
+    }
+
+    async getSchemaAttributes(): Promise<IJSONSchema[]> {
+        return this.delegated.getSchemaAttributes();
+    }
+
+    async getConfigurationSnippets?(): Promise<IJSONSchemaSnippet[]> {
+        return this.delegated.getConfigurationSnippets();
+    }
+
+    async provideDebugAdapterExecutable(): Promise<DebugAdapterExecutable | undefined> {
+        return this.delegated.provideDebugAdapterExecutable();
     }
 
     async getExtensionBundles(): Promise<string[]> {
         const debuggerContribution: {
             contributes: { javaExtensions: string[] }
             // tslint:disable-next-line:no-any
-        } = <any>(await this.pck);
+        } = <any>(await this.delegated.getExtensionPackage());
         return debuggerContribution.contributes.javaExtensions.map(javaExtPath =>
-            path.resolve(this.extensionPath, javaExtPath)
+            path.resolve(this.delegated.extensionPath, javaExtPath)
         );
     }
 
