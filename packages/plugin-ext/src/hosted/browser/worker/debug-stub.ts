@@ -69,7 +69,7 @@ export class DebugExtStub extends DebugExtImpl {
         throw new Error('Debug API works only in plugin container');
     }
 
-    startDebugging(folder: theia.WorkspaceFolder | undefined, nameOrConfiguration: string | theia.DebugConfiguration): Thenable<boolean> {
+    startDebugging(folder: theia.WorkspaceFolder | undefined, nameOrConfiguration: string | theia.DebugConfiguration): PromiseLike<boolean> {
         throw new Error('Debug API works only in plugin container');
     }
 

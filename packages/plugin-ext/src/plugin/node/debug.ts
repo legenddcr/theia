@@ -109,7 +109,7 @@ export class DebugExtImpl implements DebugExt {
         this.proxy.$removeBreakpoints(breakpoints);
     }
 
-    startDebugging(folder: theia.WorkspaceFolder | undefined, nameOrConfiguration: string | theia.DebugConfiguration): Thenable<boolean> {
+    startDebugging(folder: theia.WorkspaceFolder | undefined, nameOrConfiguration: string | theia.DebugConfiguration): PromiseLike<boolean> {
         return this.proxy.$startDebugging(folder, nameOrConfiguration);
     }
 

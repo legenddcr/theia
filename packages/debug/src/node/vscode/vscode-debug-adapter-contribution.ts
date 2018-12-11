@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import { DebugAdapterExecutable, DebugAdapterContribution } from '../debug-model';
 import { isWindows, isOSX } from '@theia/core/lib/common/os';
@@ -96,7 +96,7 @@ export class VSCodeDebugAdapterContribution implements DebugAdapterContribution 
     }
 
     protected async parse(): Promise<VSCodeExtensionPackage> {
-        let text = (await fs.readFileSync(this.pckPath)).toString();
+        let text = (await fs.readFile(this.pckPath)).toString();
 
         const nlsPath = path.join(this.extensionPath, 'package.nls.json');
         if (fs.existsSync(nlsPath)) {

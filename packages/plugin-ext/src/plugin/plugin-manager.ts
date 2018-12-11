@@ -181,7 +181,7 @@ class MementoImpl<T> implements theia.Memento {
         return value || defaultValue;
     }
 
-    update(key: string, value: T): Thenable<void> {
+    update(key: string, value: T): PromiseLike<void> {
         this.m.set(key, value);
         return Promise.resolve(undefined);
     }

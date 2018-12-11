@@ -616,7 +616,7 @@ declare module '@theia/plugin' {
 	 * The implementation provider interface defines the contract between extensions and
 	 * the go to implementation feature.
 	 */
-	export interface ImplementationProvider {
+    export interface ImplementationProvider {
 
 		/**
 		 * Provide the implementations of the symbol at the given position and document.
@@ -627,7 +627,7 @@ declare module '@theia/plugin' {
 		 * @return A definition or a thenable that resolves to such. The lack of a result can be
 		 * signaled by returning `undefined` or `null`.
 		 */
-		provideImplementation(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Definition | DefinitionLink[]>;
+        provideImplementation(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Definition | DefinitionLink[]>;
     }
 
     /**
@@ -5636,7 +5636,7 @@ declare module '@theia/plugin' {
 		 * @param provider An implementation provider.
 		 * @return A [disposable](#Disposable) that unregisters this provider when being disposed.
 		 */
-		export function registerImplementationProvider(selector: DocumentSelector, provider: ImplementationProvider): Disposable;
+        export function registerImplementationProvider(selector: DocumentSelector, provider: ImplementationProvider): Disposable;
 
         /**
          * Register a hover provider.
@@ -6080,7 +6080,7 @@ declare module '@theia/plugin' {
 		 * @param nameOrConfiguration Either the name of a debug or compound configuration or a [DebugConfiguration](#DebugConfiguration) object.
 		 * @return A thenable that resolves when debugging could be successfully started.
 		 */
-        export function startDebugging(folder: WorkspaceFolder | undefined, nameOrConfiguration: string | DebugConfiguration): Thenable<boolean>;
+        export function startDebugging(folder: WorkspaceFolder | undefined, nameOrConfiguration: string | DebugConfiguration): PromiseLike<boolean>;
 
 		/**
 		 * Add breakpoints.
@@ -6532,66 +6532,5 @@ declare module '@theia/plugin' {
 		 * @param value A value. MUST not contain cyclic references.
 		 */
         update(key: string, value: any): Thenable<void>;
-    }
-
-    /**
-     * Defines a generalized way of reporting progress updates.
-     */
-    export interface Progress<T> {
-
-        /**
-         * Report a progress update.
-         * @param value A progress item, like a message and/or an
-         * report on how much work finished
-         */
-        report(value: T): void;
-    }
-
-    /**
-     * A location in the editor at which progress information can be shown. It depends on the
-     * location how progress is visually represented.
-     */
-    export enum ProgressLocation {
-
-        /**
-         * Show progress for the source control viewlet, as overlay for the icon and as progress bar
-         * inside the viewlet (when visible). Neither supports cancellation nor discrete progress.
-         */
-        SourceControl = 1,
-
-        /**
-         * Show progress in the status bar of the editor. Neither supports cancellation nor discrete progress.
-         */
-        Window = 10,
-
-        /**
-         * Show progress as notification with an optional cancel button. Supports to show infinite and discrete progress.
-         */
-        Notification = 15
-    }
-
-    /**
-     * Value-object describing where and how progress should show.
-     */
-    export interface ProgressOptions {
-
-        /**
-         * The location at which progress should show.
-         */
-        location: ProgressLocation;
-
-        /**
-         * A human-readable string which will be used to describe the
-         * operation.
-         */
-        title?: string;
-
-        /**
-         * Controls if a cancel button should show to allow the user to
-         * cancel the long running operation.  Note that currently only
-         * `ProgressLocation.Notification` is supporting to show a cancel
-         * button.
-         */
-        cancellable?: boolean;
     }
 }
