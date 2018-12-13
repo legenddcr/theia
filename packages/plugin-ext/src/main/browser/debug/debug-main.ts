@@ -111,13 +111,13 @@ export class DebugMainImpl implements DebugMain {
             this.connectionMain);
 
         this.proxyContributors.set(contributorId, proxyContributor);
-        this.contributionManager.registerDebugPluginContributor(description.type, proxyContributor);
+        this.contributionManager.registerDebugContributor(description.type, proxyContributor);
     }
 
     async $unregisterDebugConfigurationProvider(contributorId: string): Promise<void> {
         const contributor = this.proxyContributors.get(contributorId);
         if (contributor) {
-            this.contributionManager.unregisterDebugPluginContributor(contributor.description.type);
+            this.contributionManager.unregisterDebugContributor(contributor.description.type);
             this.proxyContributors.delete(contributorId);
         }
     }

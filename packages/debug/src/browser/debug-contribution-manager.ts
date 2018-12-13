@@ -32,7 +32,22 @@ import { DebugPreferences } from './debug-preferences';
 import { DebugSessionContributionRegistry } from './debug-session-contribution-registry';
 
 /**
- * Manages both extension and plugin debuggers contributions.
+ * Describes what debug contribution has to provide for a client.
+ */
+export interface DebugContributor {
+    description: DebuggerDescription;
+    getSupportedLanguages(): Promise<string[]>;
+    getSchemaAttributes(): Promise<IJSONSchema[]>;
+    getConfigurationSnippets(): Promise<IJSONSchemaSnippet[]>;
+    provideDebugConfigurations(workspaceFolderUri: string | undefined): Promise<DebugConfiguration[]>;
+    resolveDebugConfiguration(config: DebugConfiguration, workspaceFolderUri: string | undefined): Promise<DebugConfiguration | undefined>;
+    createDebugSession(config: DebugConfiguration): Promise<string>;
+    terminateDebugSession(sessionId: string): Promise<void>;
+    debugSessionFactory(): Promise<DebugSessionFactory>;
+}
+
+/**
+ * [DebugContributor](#DebugContributor) manager.
  */
 @injectable()
 export class DebugContributionManager {
@@ -71,7 +86,7 @@ export class DebugContributionManager {
         this.onDidDeleteContributionEmitter.fire(debugType);
     }
 
-    async registerDebugPluginContributor(type: string, contributor: DebugContributor): Promise<Disposable> {
+    async registerDebugContributor(type: string, contributor: DebugContributor): Promise<Disposable> {
         if (await this.isContributorRegistered(type)) {
             console.warn(`Debugger with type '${type}' already registered.`);
             return Disposable.NULL;
@@ -88,10 +103,10 @@ export class DebugContributionManager {
 
         this.contributors.set(type, contributor);
         this.fireDidAddContribution(type);
-        return Disposable.create(() => this.unregisterDebugPluginContributor(type));
+        return Disposable.create(() => this.unregisterDebugContributor(type));
     }
 
-    async unregisterDebugPluginContributor(debugType: string): Promise<void> {
+    async unregisterDebugContributor(debugType: string): Promise<void> {
         this.contributors.delete(debugType);
         this.sessionContributionRegistry.unregisterDebugSessionContribution(debugType);
         this.fireDidDeleteContribution(debugType);
@@ -112,13 +127,19 @@ export class DebugContributionManager {
     }
 
     async resolveDebugConfiguration(config: DebugConfiguration, workspaceFolderUri: string | undefined): Promise<DebugConfiguration> {
-        const contributor = this.contributors.get(config.type);
-        if (contributor) {
-            const resolved = await contributor.resolveDebugConfiguration(config, workspaceFolderUri);
-            return resolved || config;
-        } else {
-            return this.debugService.resolveDebugConfiguration(config, workspaceFolderUri);
+        let resolved = config;
+
+        for (const contributor of this.contributors.values()) {
+            if (contributor.resolveDebugConfiguration) {
+                try {
+                    resolved = await contributor.resolveDebugConfiguration(config, workspaceFolderUri) || resolved;
+                } catch (e) {
+                    console.error(e);
+                }
+            }
         }
+
+        return this.debugService.resolveDebugConfiguration(resolved, workspaceFolderUri);
     }
 
     async getDebuggersForLanguage(language: string): Promise<DebuggerDescription[]> {
@@ -178,19 +199,4 @@ export class DebugContributionManager {
         const registeredTypes = await this.debugTypes();
         return registeredTypes.indexOf(debugType) !== -1;
     }
-}
-
-/**
- * Describes what debug contribution has to provide for a client.
- */
-export interface DebugContributor {
-    description: DebuggerDescription;
-    getSupportedLanguages(): Promise<string[]>;
-    getSchemaAttributes(): Promise<IJSONSchema[]>;
-    getConfigurationSnippets(): Promise<IJSONSchemaSnippet[]>;
-    provideDebugConfigurations(workspaceFolderUri: string | undefined): Promise<DebugConfiguration[]>;
-    resolveDebugConfiguration(config: DebugConfiguration, workspaceFolderUri: string | undefined): Promise<DebugConfiguration | undefined>;
-    createDebugSession(config: DebugConfiguration): Promise<string>;
-    terminateDebugSession(sessionId: string): Promise<void>;
-    debugSessionFactory(): Promise<DebugSessionFactory>;
 }

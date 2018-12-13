@@ -337,8 +337,8 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
             }
         });
         this.debug.debugTypes().then(async () => this.doUpdateDebugTypes());
-        this.debug.onDidContributionAdd(async () => this.doUpdateDebugTypes());
-        this.debug.onDidContributionDelete(async () => this.doUpdateDebugTypes());
+        this.debug.onDidAddContribution(async () => this.doUpdateDebugTypes());
+        this.debug.onDidDeleteContribution(async () => this.doUpdateDebugTypes());
 
         this.configurations.load();
         await this.breakpointManager.load();
