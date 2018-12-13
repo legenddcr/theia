@@ -27,7 +27,7 @@ import { WebSocketChannel } from '@theia/core/lib/common/messaging/web-socket-ch
 import { DebugConfiguration } from '../common/debug-configuration';
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 import { Disposable } from '@theia/core/lib/common/disposable';
-import { MaybePromise } from '@theia/core/src/common/types';
+import { MaybePromise } from '@theia/core/lib/common/types';
 
 // FXIME: break down this file to debug adapter and debug adapter contribution (see Theia file naming conventions)
 
