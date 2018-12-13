@@ -59,16 +59,16 @@ export class DebugContributionManager {
     @inject(DebugPreferences)
     protected readonly debugPreferences: DebugPreferences;
 
-    protected readonly onDidContributionAddEmitter = new Emitter<string>();
-    readonly onDidContributionAdd: Event<string> = this.onDidContributionAddEmitter.event;
-    protected fireDidContributionAdd(debugType: string): void {
-        this.onDidContributionAddEmitter.fire(debugType);
+    protected readonly onDidAddContributionEmitter = new Emitter<string>();
+    readonly onDidAddContribution: Event<string> = this.onDidAddContributionEmitter.event;
+    protected fireDidAddContribution(debugType: string): void {
+        this.onDidAddContributionEmitter.fire(debugType);
     }
 
-    protected readonly onDidContributionDeleteEmitter = new Emitter<string>();
-    readonly onDidContributionDelete: Event<string> = this.onDidContributionDeleteEmitter.event;
-    protected fireDidContributionDelete(debugType: string): void {
-        this.onDidContributionDeleteEmitter.fire(debugType);
+    protected readonly onDidDeleteContributionEmitter = new Emitter<string>();
+    readonly onDidDeleteContribution: Event<string> = this.onDidDeleteContributionEmitter.event;
+    protected fireDidDeleteContribution(debugType: string): void {
+        this.onDidDeleteContributionEmitter.fire(debugType);
     }
 
     async registerDebugPluginContributor(type: string, contributor: DebugContributor): Promise<Disposable> {
@@ -87,14 +87,14 @@ export class DebugContributionManager {
         }
 
         this.contributors.set(type, contributor);
-        this.fireDidContributionAdd(type);
+        this.fireDidAddContribution(type);
         return Disposable.create(() => this.unregisterDebugPluginContributor(type));
     }
 
     async unregisterDebugPluginContributor(debugType: string): Promise<void> {
         this.contributors.delete(debugType);
         this.sessionContributionRegistry.unregisterDebugSessionContribution(debugType);
-        this.fireDidContributionDelete(debugType);
+        this.fireDidDeleteContribution(debugType);
     }
 
     async debugTypes(): Promise<string[]> {
