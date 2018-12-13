@@ -612,21 +612,21 @@ declare module '@theia/plugin' {
         provideDefinition(document: TextDocument, position: Position, token: CancellationToken | undefined): ProviderResult<Definition | DefinitionLink[]>;
     }
 
-	/**
-	 * The implementation provider interface defines the contract between extensions and
-	 * the go to implementation feature.
-	 */
+    /**
+     * The implementation provider interface defines the contract between extensions and
+     * the go to implementation feature.
+     */
     export interface ImplementationProvider {
 
-		/**
-		 * Provide the implementations of the symbol at the given position and document.
-		 *
-		 * @param document The document in which the command was invoked.
-		 * @param position The position at which the command was invoked.
-		 * @param token A cancellation token.
-		 * @return A definition or a thenable that resolves to such. The lack of a result can be
-		 * signaled by returning `undefined` or `null`.
-		 */
+        /**
+         * Provide the implementations of the symbol at the given position and document.
+         *
+         * @param document The document in which the command was invoked.
+         * @param position The position at which the command was invoked.
+         * @param token A cancellation token.
+         * @return A definition or a thenable that resolves to such. The lack of a result can be
+         * signaled by returning `undefined` or `null`.
+         */
         provideImplementation(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Definition | DefinitionLink[]>;
     }
 
@@ -2352,16 +2352,16 @@ declare module '@theia/plugin' {
          */
         subscriptions: { dispose(): any }[];
 
-		/**
-		 * A memento object that stores state in the context
-		 * of the currently opened [workspace](#workspace.workspaceFolders).
-		 */
+        /**
+         * A memento object that stores state in the context
+         * of the currently opened [workspace](#workspace.workspaceFolders).
+         */
         workspaceState: Memento;
 
-		/**
-		 * A memento object that stores state independent
-		 * of the current opened [workspace](#workspace.workspaceFolders).
-		 */
+        /**
+         * A memento object that stores state independent
+         * of the current opened [workspace](#workspace.workspaceFolders).
+         */
         globalState: Memento;
 
         /**
@@ -5625,17 +5625,17 @@ declare module '@theia/plugin' {
          */
         export function registerTypeDefinitionProvider(selector: DocumentSelector, provider: TypeDefinitionProvider): Disposable;
 
-		/**
-		 * Register an implementation provider.
-		 *
-		 * Multiple providers can be registered for a language. In that case providers are asked in
-		 * parallel and the results are merged. A failing provider (rejected promise or exception) will
-		 * not cause a failure of the whole operation.
-		 *
-		 * @param selector A selector that defines the documents this provider is applicable to.
-		 * @param provider An implementation provider.
-		 * @return A [disposable](#Disposable) that unregisters this provider when being disposed.
-		 */
+        /**
+         * Register an implementation provider.
+         *
+         * Multiple providers can be registered for a language. In that case providers are asked in
+         * parallel and the results are merged. A failing provider (rejected promise or exception) will
+         * not cause a failure of the whole operation.
+         *
+         * @param selector A selector that defines the documents this provider is applicable to.
+         * @param provider An implementation provider.
+         * @return A [disposable](#Disposable) that unregisters this provider when being disposed.
+         */
         export function registerImplementationProvider(selector: DocumentSelector, provider: ImplementationProvider): Disposable;
 
         /**
@@ -5824,136 +5824,136 @@ declare module '@theia/plugin' {
          */
         type: string;
 
-		/**
-		 * The name of the debug session.
-		 */
+        /**
+         * The name of the debug session.
+         */
         name: string;
 
-		/**
-		 * The request type of the debug session.
-		 */
+        /**
+         * The request type of the debug session.
+         */
         request: string;
 
-		/**
-		 * Additional debug type specific properties.
-		 */
+        /**
+         * Additional debug type specific properties.
+         */
         [key: string]: any;
     }
 
     /**
-	 * A debug session.
-	 */
+ * A debug session.
+ */
     export interface DebugSession {
 
-		/**
-		 * The unique ID of this debug session.
-		 */
+        /**
+         * The unique ID of this debug session.
+         */
         readonly id: string;
 
-		/**
-		 * The debug session's type from the [debug configuration](#DebugConfiguration).
-		 */
+        /**
+         * The debug session's type from the [debug configuration](#DebugConfiguration).
+         */
         readonly type: string;
 
-		/**
-		 * The debug session's name from the [debug configuration](#DebugConfiguration).
-		 */
+        /**
+         * The debug session's name from the [debug configuration](#DebugConfiguration).
+         */
         readonly name: string;
 
-		/**
-		 * Send a custom request to the debug adapter.
-		 */
+        /**
+         * Send a custom request to the debug adapter.
+         */
         customRequest(command: string, args?: any): PromiseLike<any>;
     }
 
-	/**
-	 * A custom Debug Adapter Protocol event received from a [debug session](#DebugSession).
-	 */
+    /**
+     * A custom Debug Adapter Protocol event received from a [debug session](#DebugSession).
+     */
     export interface DebugSessionCustomEvent {
-		/**
-		 * The [debug session](#DebugSession) for which the custom event was received.
-		 */
+        /**
+         * The [debug session](#DebugSession) for which the custom event was received.
+         */
         session: DebugSession;
 
-		/**
-		 * Type of event.
-		 */
+        /**
+         * Type of event.
+         */
         event: string;
 
-		/**
-		 * Event specific information.
-		 */
+        /**
+         * Event specific information.
+         */
         body?: any;
     }
 
-	/**
-	 * A debug configuration provider allows to add the initial debug configurations to a newly created launch.json
-	 * and to resolve a launch configuration before it is used to start a new debug session.
-	 * A debug configuration provider is registered via #debug.registerDebugConfigurationProvider.
-	 */
+    /**
+     * A debug configuration provider allows to add the initial debug configurations to a newly created launch.json
+     * and to resolve a launch configuration before it is used to start a new debug session.
+     * A debug configuration provider is registered via #debug.registerDebugConfigurationProvider.
+     */
     export interface DebugConfigurationProvider {
-		/**
-		 * Provides initial [debug configuration](#DebugConfiguration). If more than one debug configuration provider is
-		 * registered for the same type, debug configurations are concatenated in arbitrary order.
-		 *
-		 * @param folder The workspace folder for which the configurations are used or undefined for a folderless setup.
-		 * @param token A cancellation token.
-		 * @return An array of [debug configurations](#DebugConfiguration).
-		 */
+        /**
+         * Provides initial [debug configuration](#DebugConfiguration). If more than one debug configuration provider is
+         * registered for the same type, debug configurations are concatenated in arbitrary order.
+         *
+         * @param folder The workspace folder for which the configurations are used or undefined for a folderless setup.
+         * @param token A cancellation token.
+         * @return An array of [debug configurations](#DebugConfiguration).
+         */
         provideDebugConfigurations?(folder: WorkspaceFolder | undefined, token?: CancellationToken): ProviderResult<DebugConfiguration[]>;
 
-		/**
-		 * Resolves a [debug configuration](#DebugConfiguration) by filling in missing values or by adding/changing/removing attributes.
-		 * If more than one debug configuration provider is registered for the same type, the resolveDebugConfiguration calls are chained
-		 * in arbitrary order and the initial debug configuration is piped through the chain.
-		 * Returning the value 'undefined' prevents the debug session from starting.
-		 * Returning the value 'null' prevents the debug session from starting and opens the underlying debug configuration instead.
-		 *
-		 * @param folder The workspace folder from which the configuration originates from or undefined for a folderless setup.
-		 * @param debugConfiguration The [debug configuration](#DebugConfiguration) to resolve.
-		 * @param token A cancellation token.
-		 * @return The resolved debug configuration or undefined or null.
-		 */
+        /**
+         * Resolves a [debug configuration](#DebugConfiguration) by filling in missing values or by adding/changing/removing attributes.
+         * If more than one debug configuration provider is registered for the same type, the resolveDebugConfiguration calls are chained
+         * in arbitrary order and the initial debug configuration is piped through the chain.
+         * Returning the value 'undefined' prevents the debug session from starting.
+         * Returning the value 'null' prevents the debug session from starting and opens the underlying debug configuration instead.
+         *
+         * @param folder The workspace folder from which the configuration originates from or undefined for a folderless setup.
+         * @param debugConfiguration The [debug configuration](#DebugConfiguration) to resolve.
+         * @param token A cancellation token.
+         * @return The resolved debug configuration or undefined or null.
+         */
         resolveDebugConfiguration?(folder: WorkspaceFolder | undefined, debugConfiguration: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration>;
     }
 
-	/**
-	 * Represents the debug console.
-	 */
+    /**
+     * Represents the debug console.
+     */
     export interface DebugConsole {
-		/**
-		 * Append the given value to the debug console.
-		 *
-		 * @param value A string, falsy values will not be printed.
-		 */
+        /**
+         * Append the given value to the debug console.
+         *
+         * @param value A string, falsy values will not be printed.
+         */
         append(value: string): void;
 
-		/**
-		 * Append the given value and a line feed character
-		 * to the debug console.
-		 *
-		 * @param value A string, falsy values will be printed.
-		 */
+        /**
+         * Append the given value and a line feed character
+         * to the debug console.
+         *
+         * @param value A string, falsy values will be printed.
+         */
         appendLine(value: string): void;
     }
 
-	/**
-	 * An event describing the changes to the set of [breakpoints](#Breakpoint).
-	 */
+    /**
+     * An event describing the changes to the set of [breakpoints](#Breakpoint).
+     */
     export interface BreakpointsChangeEvent {
-		/**
-		 * Added breakpoints.
-		 */
+        /**
+         * Added breakpoints.
+         */
         readonly added: Breakpoint[];
 
-		/**
-		 * Removed breakpoints.
-		 */
+        /**
+         * Removed breakpoints.
+         */
         readonly removed: Breakpoint[];
 
-		/**
-		 * Changed breakpoints.
-		 */
+        /**
+         * Changed breakpoints.
+         */
         readonly changed: Breakpoint[];
     }
 
@@ -5961,53 +5961,53 @@ declare module '@theia/plugin' {
      * The base class of all breakpoint types.
      */
     export class Breakpoint {
-		/**
-		 * Is breakpoint enabled.
-		 */
+        /**
+         * Is breakpoint enabled.
+         */
         readonly enabled: boolean;
-		/**
-		 * An optional expression for conditional breakpoints.
-		 */
+        /**
+         * An optional expression for conditional breakpoints.
+         */
         readonly condition?: string;
-		/**
-		 * An optional expression that controls how many hits of the breakpoint are ignored.
-		 */
+        /**
+         * An optional expression that controls how many hits of the breakpoint are ignored.
+         */
         readonly hitCondition?: string;
-		/**
-		 * An optional message that gets logged when this breakpoint is hit. Embedded expressions within {} are interpolated by the debug adapter.
-		 */
+        /**
+         * An optional message that gets logged when this breakpoint is hit. Embedded expressions within {} are interpolated by the debug adapter.
+         */
         readonly logMessage?: string;
 
         protected constructor(enabled?: boolean, condition?: string, hitCondition?: string, logMessage?: string);
     }
 
-	/**
-	 * A breakpoint specified by a source location.
-	 */
+    /**
+     * A breakpoint specified by a source location.
+     */
     export class SourceBreakpoint extends Breakpoint {
-		/**
-		 * The source and line position of this breakpoint.
-		 */
+        /**
+         * The source and line position of this breakpoint.
+         */
         readonly location: Location;
 
-		/**
-		 * Create a new breakpoint for a source location.
-		 */
+        /**
+         * Create a new breakpoint for a source location.
+         */
         constructor(location: Location, enabled?: boolean, condition?: string, hitCondition?: string, logMessage?: string);
     }
 
-	/**
-	 * A breakpoint specified by a function name.
-	 */
+    /**
+     * A breakpoint specified by a function name.
+     */
     export class FunctionBreakpoint extends Breakpoint {
-		/**
-		 * The name of the function to which this breakpoint is attached.
-		 */
+        /**
+         * The name of the function to which this breakpoint is attached.
+         */
         readonly functionName: string;
 
-		/**
-		 * Create a new function breakpoint.
-		 */
+        /**
+         * Create a new function breakpoint.
+         */
         constructor(functionName: string, enabled?: boolean, condition?: string, hitCondition?: string, logMessage?: string);
     }
 
@@ -6016,82 +6016,82 @@ declare module '@theia/plugin' {
      */
     export namespace debug {
 
-		/**
-		 * The currently active [debug session](#DebugSession) or `undefined`. The active debug session is the one
-		 * represented by the debug action floating window or the one currently shown in the drop down menu of the debug action floating window.
-		 * If no debug session is active, the value is `undefined`.
-		 */
+        /**
+         * The currently active [debug session](#DebugSession) or `undefined`. The active debug session is the one
+         * represented by the debug action floating window or the one currently shown in the drop down menu of the debug action floating window.
+         * If no debug session is active, the value is `undefined`.
+         */
         export let activeDebugSession: DebugSession | undefined;
 
-		/**
-		 * The currently active [debug console](#DebugConsole).
-		 */
+        /**
+         * The currently active [debug console](#DebugConsole).
+         */
         export let activeDebugConsole: DebugConsole;
 
-		/**
-		 * List of breakpoints.
-		 */
+        /**
+         * List of breakpoints.
+         */
         export let breakpoints: Breakpoint[];
 
-		/**
-		 * An [event](#Event) which fires when the [active debug session](#debug.activeDebugSession)
-		 * has changed. *Note* that the event also fires when the active debug session changes
-		 * to `undefined`.
-		 */
+        /**
+         * An [event](#Event) which fires when the [active debug session](#debug.activeDebugSession)
+         * has changed. *Note* that the event also fires when the active debug session changes
+         * to `undefined`.
+         */
         export const onDidChangeActiveDebugSession: Event<DebugSession | undefined>;
 
-		/**
-		 * An [event](#Event) which fires when a new [debug session](#DebugSession) has been started.
-		 */
+        /**
+         * An [event](#Event) which fires when a new [debug session](#DebugSession) has been started.
+         */
         export const onDidStartDebugSession: Event<DebugSession>;
 
-		/**
-		 * An [event](#Event) which fires when a custom DAP event is received from the [debug session](#DebugSession).
-		 */
+        /**
+         * An [event](#Event) which fires when a custom DAP event is received from the [debug session](#DebugSession).
+         */
         export const onDidReceiveDebugSessionCustomEvent: Event<DebugSessionCustomEvent>;
 
-		/**
-		 * An [event](#Event) which fires when a [debug session](#DebugSession) has terminated.
-		 */
+        /**
+         * An [event](#Event) which fires when a [debug session](#DebugSession) has terminated.
+         */
         export const onDidTerminateDebugSession: Event<DebugSession>;
 
-		/**
-		 * An [event](#Event) that is emitted when the set of breakpoints is added, removed, or changed.
-		 */
+        /**
+         * An [event](#Event) that is emitted when the set of breakpoints is added, removed, or changed.
+         */
         export const onDidChangeBreakpoints: Event<BreakpointsChangeEvent>;
 
-		/**
-		 * Register a [debug configuration provider](#DebugConfigurationProvider) for a specific debug type.
-		 * More than one provider can be registered for the same type.
-		 *
-		 * @param type The debug type for which the provider is registered.
-		 * @param provider The [debug configuration provider](#DebugConfigurationProvider) to register.
-		 * @return A [disposable](#Disposable) that unregisters this provider when being disposed.
-		 */
+        /**
+         * Register a [debug configuration provider](#DebugConfigurationProvider) for a specific debug type.
+         * More than one provider can be registered for the same type.
+         *
+         * @param type The debug type for which the provider is registered.
+         * @param provider The [debug configuration provider](#DebugConfigurationProvider) to register.
+         * @return A [disposable](#Disposable) that unregisters this provider when being disposed.
+         */
         export function registerDebugConfigurationProvider(debugType: string, provider: DebugConfigurationProvider): Disposable;
 
-		/**
-		 * Start debugging by using either a named launch or named compound configuration,
-		 * or by directly passing a [DebugConfiguration](#DebugConfiguration).
-		 * The named configurations are looked up in '.vscode/launch.json' found in the given folder.
-		 * Before debugging starts, all unsaved files are saved and the launch configurations are brought up-to-date.
-		 * Folder specific variables used in the configuration (e.g. '${workspaceFolder}') are resolved against the given folder.
-		 * @param folder The [workspace folder](#WorkspaceFolder) for looking up named configurations and resolving variables or `undefined` for a non-folder setup.
-		 * @param nameOrConfiguration Either the name of a debug or compound configuration or a [DebugConfiguration](#DebugConfiguration) object.
-		 * @return A thenable that resolves when debugging could be successfully started.
-		 */
+        /**
+         * Start debugging by using either a named launch or named compound configuration,
+         * or by directly passing a [DebugConfiguration](#DebugConfiguration).
+         * The named configurations are looked up in '.vscode/launch.json' found in the given folder.
+         * Before debugging starts, all unsaved files are saved and the launch configurations are brought up-to-date.
+         * Folder specific variables used in the configuration (e.g. '${workspaceFolder}') are resolved against the given folder.
+         * @param folder The [workspace folder](#WorkspaceFolder) for looking up named configurations and resolving variables or `undefined` for a non-folder setup.
+         * @param nameOrConfiguration Either the name of a debug or compound configuration or a [DebugConfiguration](#DebugConfiguration) object.
+         * @return A thenable that resolves when debugging could be successfully started.
+         */
         export function startDebugging(folder: WorkspaceFolder | undefined, nameOrConfiguration: string | DebugConfiguration): PromiseLike<boolean>;
 
-		/**
-		 * Add breakpoints.
-		 * @param breakpoints The breakpoints to add.
-		*/
+        /**
+         * Add breakpoints.
+         * @param breakpoints The breakpoints to add.
+        */
         export function addBreakpoints(breakpoints: Breakpoint[]): void;
 
-		/**
-		 * Remove breakpoints.
-		 * @param breakpoints The breakpoints to remove.
-		 */
+        /**
+         * Remove breakpoints.
+         * @param breakpoints The breakpoints to remove.
+         */
         export function removeBreakpoints(breakpoints: Breakpoint[]): void;
     }
 
@@ -6365,7 +6365,7 @@ declare module '@theia/plugin' {
         Never = 3
     }
 
-    /** Controls how the task channel is used between tasks	 */
+    /** Controls how the task channel is used between tasks */
     export enum TaskPanelKind {
 
         /** Shares a panel with other tasks. This is the default. */
@@ -6501,36 +6501,36 @@ declare module '@theia/plugin' {
         export function registerTaskProvider(type: string, provider: TaskProvider): Disposable;
     }
 
-	/**
-	 * A memento represents a storage utility. It can store and retrieve
-	 * values.
-	 */
+    /**
+     * A memento represents a storage utility. It can store and retrieve
+     * values.
+     */
     export interface Memento {
 
-		/**
-		 * Return a value.
-		 *
-		 * @param key A string.
-		 * @return The stored value or `undefined`.
-		 */
+        /**
+        * Return a value.
+        *
+        * @param key A string.
+        * @return The stored value or `undefined`.
+        */
         get<T>(key: string): T | undefined;
 
-		/**
-		 * Return a value.
-		 *
-		 * @param key A string.
-		 * @param defaultValue A value that should be returned when there is no
-		 * value (`undefined`) with the given key.
-		 * @return The stored value or the defaultValue.
-		 */
+        /**
+         * Return a value.
+         *
+         * @param key A string.
+         * @param defaultValue A value that should be returned when there is no
+         * value (`undefined`) with the given key.
+         * @return The stored value or the defaultValue.
+         */
         get<T>(key: string, defaultValue: T): T;
 
-		/**
-		 * Store a value. The value must be JSON-stringifyable.
-		 *
-		 * @param key A string.
-		 * @param value A value. MUST not contain cyclic references.
-		 */
+        /**
+         * Store a value. The value must be JSON-stringifyable.
+         *
+         * @param key A string.
+         * @param value A value. MUST not contain cyclic references.
+         */
         update(key: string, value: any): PromiseLike<void>;
     }
 }
