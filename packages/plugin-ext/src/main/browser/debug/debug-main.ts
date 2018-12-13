@@ -17,14 +17,14 @@
 // tslint:disable:no-any
 
 import { interfaces } from 'inversify';
-import { RPCProtocol } from '../../api/rpc-protocol';
+import { RPCProtocol } from '../../../api/rpc-protocol';
 import {
     DebugMain,
     DebugExt,
     MAIN_RPC_CONTEXT
-} from '../../api/plugin-api';
+} from '../../../api/plugin-api';
 import { DebugSessionManager } from '@theia/debug/lib/browser/debug-session-manager';
-import { Breakpoint, WorkspaceFolder } from '../../api/model';
+import { Breakpoint, WorkspaceFolder } from '../../../api/model';
 import { LabelProvider } from '@theia/core/lib/browser';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { BreakpointManager } from '@theia/debug/lib/browser/breakpoint/breakpoint-manager';
@@ -32,13 +32,17 @@ import { DebugBreakpoint } from '@theia/debug/lib/browser/model/debug-breakpoint
 import URI from 'vscode-uri';
 import { DebugConsoleSession } from '@theia/debug/lib/browser/console/debug-console-session';
 import { SourceBreakpoint } from '@theia/debug/lib/browser/breakpoint/breakpoint-marker';
-import { DebugPluginContributor, DebugContributionManager } from '@theia/debug/lib/browser/debug-contribution-manager';
+import { DebugContributor, DebugContributionManager } from '@theia/debug/lib/browser/debug-contribution-manager';
 import { DebugConfiguration } from '@theia/debug/lib/common/debug-configuration';
-import { PluginWebSocketChannel } from '../../common/connection';
-import { ConnectionMainImpl } from './connection-main';
+import { ConnectionMainImpl } from '../connection-main';
 import { DebuggerDescription } from '@theia/debug/lib/common/debug-service';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { DebugConfigurationManager } from '@theia/debug/lib/browser/debug-configuration-manager';
+import { TerminalService } from '@theia/terminal/lib/browser/base/terminal-service';
+import { MessageClient } from '@theia/core/lib/common/message-service-protocol';
+import { OutputChannelManager } from '@theia/output/lib/common/output-channel';
+import { DebugPreferences } from '@theia/debug/lib/browser/debug-preferences';
+import { PluginDebugContributor } from './plugin-debug-contributor';
 
 export class DebugMainImpl implements DebugMain {
     private readonly debugExt: DebugExt;
@@ -50,9 +54,13 @@ export class DebugMainImpl implements DebugMain {
     private readonly debugConsoleSession: DebugConsoleSession;
     private readonly contributionManager: DebugContributionManager;
     private readonly configurationManager: DebugConfigurationManager;
+    private readonly terminalService: TerminalService;
+    private readonly messages: MessageClient;
+    private readonly outputChannelManager: OutputChannelManager;
+    private readonly debugPreferences: DebugPreferences;
 
     // registered plugins per contributorId
-    private readonly proxyContributors = new Map<string, DebugPluginContributor>();
+    private readonly proxyContributors = new Map<string, DebugContributor>();
 
     constructor(rpc: RPCProtocol, readonly connectionMain: ConnectionMainImpl, container: interfaces.Container) {
         this.debugExt = rpc.getProxy(MAIN_RPC_CONTEXT.DEBUG_EXT);
@@ -63,6 +71,10 @@ export class DebugMainImpl implements DebugMain {
         this.breakpointsManager = container.get(BreakpointManager);
         this.debugConsoleSession = container.get(DebugConsoleSession);
         this.configurationManager = container.get(DebugConfigurationManager);
+        this.terminalService = container.get(TerminalService);
+        this.messages = container.get(MessageClient);
+        this.outputChannelManager = container.get(OutputChannelManager);
+        this.debugPreferences = container.get(DebugPreferences);
 
         // TODO: distinguish added/deleted breakpoints
         this.breakpointsManager.onDidChangeMarkers(uri => {
@@ -86,28 +98,17 @@ export class DebugMainImpl implements DebugMain {
     }
 
     async $registerDebugConfigurationProvider(contributorId: string, description: DebuggerDescription): Promise<void> {
-        // const sessionIdDeferred = new Deferred<string>();
-
-        const proxyContributor: DebugPluginContributor = {
-            description,
-
-            provideDebugConfigurations: (workspaceFolderUri: string | undefined) =>
-                this.debugExt.$provideDebugConfigurations(contributorId, workspaceFolderUri),
-            resolveDebugConfiguration: (config: DebugConfiguration, workspaceFolderUri: string | undefined) =>
-                this.debugExt.$resolveDebugConfigurations(contributorId, config, workspaceFolderUri),
-
-            getSupportedLanguages: () => this.debugExt.$getSupportedLanguages(contributorId),
-            getSchemaAttributes: () => this.debugExt.$getSchemaAttributes(contributorId),
-            getConfigurationSnippets: () => this.debugExt.$getConfigurationSnippets(contributorId),
-
-            createDebugSession: (debugConfiguration: DebugConfiguration) => this.debugExt.$createDebugSession(contributorId, debugConfiguration),
-            terminateDebugSession: (sessionId: string) => this.debugExt.$terminateDebugSession(sessionId),
-
-            getConnectionFactory: async (sessionId: string) => {
-                const connection = await this.connectionMain.ensureConnection(sessionId);
-                return new PluginWebSocketChannel(connection);
-            }
-        };
+        const proxyContributor = new PluginDebugContributor(description,
+            contributorId,
+            this.debugExt,
+            this.labelProvider,
+            this.editorManager,
+            this.breakpointsManager,
+            this.terminalService,
+            this.messages,
+            this.outputChannelManager,
+            this.debugPreferences,
+            this.connectionMain);
 
         this.proxyContributors.set(contributorId, proxyContributor);
         this.contributionManager.registerDebugPluginContributor(description.type, proxyContributor);

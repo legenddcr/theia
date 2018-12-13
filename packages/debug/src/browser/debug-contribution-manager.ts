@@ -22,17 +22,13 @@ import { DebugService, DebuggerDescription } from '../common/debug-service';
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 import { Emitter, Event } from '@theia/core/lib/common/event';
 import { DebugSessionFactory } from './debug-session-contribution';
-import { DebugSessionOptions } from './debug-session-options';
-import { DebugSession } from './debug-session';
 import { TerminalService } from '@theia/terminal/lib/browser/base/terminal-service';
 import { EditorManager } from '@theia/editor/lib/browser/editor-manager';
 import { BreakpointManager } from './breakpoint/breakpoint-manager';
 import { LabelProvider } from '@theia/core/lib/browser/label-provider';
 import { MessageClient } from '@theia/core/lib/common/message-service-protocol';
-import { OutputChannelManager, OutputChannel } from '@theia/output/lib/common/output-channel';
+import { OutputChannelManager } from '@theia/output/lib/common/output-channel';
 import { DebugPreferences } from './debug-preferences';
-import { DebugSessionConnection } from './debug-session-connection';
-import { IWebSocket } from 'vscode-ws-jsonrpc/lib/socket/socket';
 import { DebugSessionContributionRegistry } from './debug-session-contribution-registry';
 
 /**
@@ -40,7 +36,7 @@ import { DebugSessionContributionRegistry } from './debug-session-contribution-r
  */
 @injectable()
 export class DebugContributionManager {
-    protected readonly pluginContributors = new Map<string, DebugPluginContributor>();
+    protected readonly contributors = new Map<string, DebugContributor>();
 
     @inject(WorkspaceService)
     protected readonly workspaceService: WorkspaceService;
@@ -75,44 +71,39 @@ export class DebugContributionManager {
         this.onDidContributionDeleteEmitter.fire(debugType);
     }
 
-    async registerDebugPluginContributor(type: string, contributor: DebugPluginContributor): Promise<Disposable> {
+    async registerDebugPluginContributor(type: string, contributor: DebugContributor): Promise<Disposable> {
         if (await this.isContributorRegistered(type)) {
             console.warn(`Debugger with type '${type}' already registered.`);
             return Disposable.NULL;
         }
 
-        this.sessionContributionRegistry.registerDebugSessionContribution(type, {
-            debugType: type,
-            debugSessionFactory: () =>
-                new PluginDebugSessionFactory(
-                    this.terminalService,
-                    this.editorManager,
-                    this.breakpoints,
-                    this.labelProvider,
-                    this.messages,
-                    this.outputChannelManager,
-                    this.debugPreferences,
-                    contributor)
-        });
+        if (contributor.debugSessionFactory) {
+            const debugSessionFactory = await contributor.debugSessionFactory();
+            this.sessionContributionRegistry.registerDebugSessionContribution(type,
+                {
+                    debugType: type,
+                    debugSessionFactory: () => debugSessionFactory
+                });
+        }
 
-        this.pluginContributors.set(type, contributor);
+        this.contributors.set(type, contributor);
         this.fireDidContributionAdd(type);
         return Disposable.create(() => this.unregisterDebugPluginContributor(type));
     }
 
     async unregisterDebugPluginContributor(debugType: string): Promise<void> {
-        this.pluginContributors.delete(debugType);
+        this.contributors.delete(debugType);
         this.sessionContributionRegistry.unregisterDebugSessionContribution(debugType);
         this.fireDidContributionDelete(debugType);
     }
 
     async debugTypes(): Promise<string[]> {
         const debugTypes = await this.debugService.debugTypes();
-        return debugTypes.concat(Array.from(this.pluginContributors.keys()));
+        return debugTypes.concat(Array.from(this.contributors.keys()));
     }
 
     async provideDebugConfigurations(debugType: string, workspaceFolderUri: string | undefined): Promise<DebugConfiguration[]> {
-        const contributor = this.pluginContributors.get(debugType);
+        const contributor = this.contributors.get(debugType);
         if (contributor) {
             return contributor.provideDebugConfigurations(workspaceFolderUri);
         } else {
@@ -121,7 +112,7 @@ export class DebugContributionManager {
     }
 
     async resolveDebugConfiguration(config: DebugConfiguration, workspaceFolderUri: string | undefined): Promise<DebugConfiguration> {
-        const contributor = this.pluginContributors.get(config.type);
+        const contributor = this.contributors.get(config.type);
         if (contributor) {
             const resolved = await contributor.resolveDebugConfiguration(config, workspaceFolderUri);
             return resolved || config;
@@ -133,7 +124,7 @@ export class DebugContributionManager {
     async getDebuggersForLanguage(language: string): Promise<DebuggerDescription[]> {
         const debuggers = await this.debugService.getDebuggersForLanguage(language);
 
-        for (const contributor of this.pluginContributors.values()) {
+        for (const contributor of this.contributors.values()) {
             const languages = await contributor.getSupportedLanguages();
             if (languages && languages.indexOf(language) !== -1) {
                 debuggers.push(contributor.description);
@@ -144,7 +135,7 @@ export class DebugContributionManager {
     }
 
     async getSchemaAttributes(debugType: string): Promise<IJSONSchema[]> {
-        const contributor = this.pluginContributors.get(debugType);
+        const contributor = this.contributors.get(debugType);
         if (contributor) {
             return contributor.getSchemaAttributes();
         } else {
@@ -155,7 +146,7 @@ export class DebugContributionManager {
     async getConfigurationSnippets(): Promise<IJSONSchemaSnippet[]> {
         let snippets = await this.debugService.getConfigurationSnippets();
 
-        for (const contributor of this.pluginContributors.values()) {
+        for (const contributor of this.contributors.values()) {
             const contribSnippets = await contributor.getConfigurationSnippets();
             if (contribSnippets) {
                 snippets = snippets.concat(contribSnippets);
@@ -166,7 +157,7 @@ export class DebugContributionManager {
     }
 
     async create(config: DebugConfiguration): Promise<string> {
-        const contributor = this.pluginContributors.get(config.type);
+        const contributor = this.contributors.get(config.type);
         if (contributor) {
             return contributor.createDebugSession(config);
         } else {
@@ -175,7 +166,7 @@ export class DebugContributionManager {
     }
 
     async stop(debugType: string, sessionId: string): Promise<void> {
-        const contributor = this.pluginContributors.get(debugType);
+        const contributor = this.contributors.get(debugType);
         if (contributor) {
             return contributor.terminateDebugSession(sessionId);
         } else {
@@ -190,51 +181,9 @@ export class DebugContributionManager {
 }
 
 /**
- * Session factory for a client debug session that communicates with debug adapter contributed as plugin.
- * The main difference is to use a connection factory that creates [IWebSocket](#IWebSocket) over Rpc channel.
+ * Describes what debug contribution has to provide for a client.
  */
-class PluginDebugSessionFactory implements DebugSessionFactory {
-    constructor(
-        protected readonly terminalService: TerminalService,
-        protected readonly editorManager: EditorManager,
-        protected readonly breakpoints: BreakpointManager,
-        protected readonly labelProvider: LabelProvider,
-        protected readonly messages: MessageClient,
-        protected readonly outputChannelManager: OutputChannelManager,
-        protected readonly debugPreferences: DebugPreferences,
-        protected readonly contributor: DebugPluginContributor
-    ) { }
-
-    get(sessionId: string, options: DebugSessionOptions): DebugSession {
-        let traceOutputChannel: OutputChannel | undefined;
-
-        if (this.debugPreferences['debug.trace']) {
-            traceOutputChannel = this.outputChannelManager.getChannel('Debug adapters');
-        }
-
-        const connection = new DebugSessionConnection(
-            sessionId,
-            this.contributor.getConnectionFactory,
-            traceOutputChannel);
-
-        return new DebugSession(
-            sessionId,
-            options,
-            connection,
-            this.terminalService,
-            this.editorManager,
-            this.breakpoints,
-            this.labelProvider,
-            this.messages,
-            traceOutputChannel,
-        );
-    }
-}
-
-/**
- * Describes what plugin contribution has to provide for a client.
- */
-export interface DebugPluginContributor {
+export interface DebugContributor {
     description: DebuggerDescription;
     getSupportedLanguages(): Promise<string[]>;
     getSchemaAttributes(): Promise<IJSONSchema[]>;
@@ -243,5 +192,5 @@ export interface DebugPluginContributor {
     resolveDebugConfiguration(config: DebugConfiguration, workspaceFolderUri: string | undefined): Promise<DebugConfiguration | undefined>;
     createDebugSession(config: DebugConfiguration): Promise<string>;
     terminateDebugSession(sessionId: string): Promise<void>;
-    getConnectionFactory(sessionId: string): Promise<IWebSocket>;
+    debugSessionFactory(): Promise<DebugSessionFactory>;
 }

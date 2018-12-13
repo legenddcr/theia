@@ -34,7 +34,7 @@ import { NotificationMainImpl } from './notification-main';
 import { ConnectionMainImpl } from './connection-main';
 import { WebviewsMainImpl } from './webviews-main';
 import { TasksMainImpl } from './tasks-main';
-import { DebugMainImpl } from './debug-main';
+import { DebugMainImpl } from './debug/debug-main';
 
 export function setUpPluginApi(rpc: RPCProtocol, container: interfaces.Container): void {
     const commandRegistryMain = new CommandRegistryMainImpl(rpc, container);

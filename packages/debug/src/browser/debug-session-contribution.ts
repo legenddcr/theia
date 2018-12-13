@@ -80,15 +80,7 @@ export class DefaultDebugSessionFactory implements DebugSessionFactory {
     @inject(DebugPreferences)
     protected readonly debugPreferences: DebugPreferences;
 
-    protected traceOutputChannel: OutputChannel | undefined;
-
     get(sessionId: string, options: DebugSessionOptions): DebugSession {
-        let traceOutputChannel: OutputChannel | undefined;
-
-        if (this.debugPreferences['debug.trace']) {
-            traceOutputChannel = this.outputChannelManager.getChannel('Debug adapters');
-        }
-
         const connection = new DebugSessionConnection(
             sessionId,
             () => new Promise<IWebSocket>(resolve =>
@@ -96,7 +88,7 @@ export class DefaultDebugSessionFactory implements DebugSessionFactory {
                     resolve(channel);
                 }, { reconnecting: false })
             ),
-            traceOutputChannel);
+            this.getTraceOutputChannel());
 
         return new DebugSession(
             sessionId,
@@ -106,8 +98,12 @@ export class DefaultDebugSessionFactory implements DebugSessionFactory {
             this.editorManager,
             this.breakpoints,
             this.labelProvider,
-            this.messages,
-            traceOutputChannel,
-        );
+            this.messages);
+    }
+
+    protected getTraceOutputChannel(): OutputChannel | undefined {
+        if (this.debugPreferences['debug.trace']) {
+            return this.outputChannelManager.getChannel('Debug adapters');
+        }
     }
 }
