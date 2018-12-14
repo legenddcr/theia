@@ -53,6 +53,10 @@ export class PluginDebugAdapterContribution {
     }
 
     async provideDebugAdapterExecutable(debugConfiguration: theia.DebugConfiguration): Promise<DebugAdapterExecutable> {
+        if (this.packageContribution.adapterExecutableCommand) {
+            return await this.commandRegistryExt.executeCommand(this.packageContribution.adapterExecutableCommand, []) as DebugAdapterExecutable;
+        }
+
         const info = this.toPlatformInfo(this.packageContribution);
         let program = (info && info.program || this.packageContribution.program);
         if (!program) {

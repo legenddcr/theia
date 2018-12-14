@@ -96,7 +96,7 @@ export class Node2DebugAdapterContribution extends AbstractVSCodeDebugAdapterCon
     constructor() {
         super(
             'node2',
-            path.join(__dirname, '../../download/node-debug/extension')
+            path.join(__dirname, '../../download/node-debug2/extension')
         );
     }
 }
