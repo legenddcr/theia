@@ -6,7 +6,7 @@
 - [core] Add a way to prevent application exit from extensions.
 - [core] Prevent application exit if some editors are dirty.
 - [languages] Add a preference for every language contribution to be able to trace the communication client <-> server
-- [plug-in] added `tasks.onDidStartTask` Plug-in API
+- [plug-in] Add `tasks.onDidStartTask` Plug-in API
 
 
 ## v0.3.17
