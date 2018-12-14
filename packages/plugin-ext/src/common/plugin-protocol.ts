@@ -99,26 +99,30 @@ export interface ScopeMap {
     [scopeName: string]: string;
 }
 
-export interface PluginPackageDebuggersContribution {
-    type: string,
-    label: string,
-    program?: string,
-    runtime?: string,
-    enableBreakpointsFor?: { languageIds: string[] },
-    configurationAttributes: { [request: string]: IJSONSchema },
-    initialConfigurations?: DebugAdapterConfiguration[],
-    configurationSnippets: IJSONSchemaSnippet[],
-    variables?: ScopeMap,
-    languages: string[],
-    adapterExecutableCommand?: string
+export interface PlatformSpecificAdapterContribution {
+    program?: string;
+    args?: string[];
+    runtime?: string;
+    runtimeArgs?: string[];
 }
 
-export interface DebugAdapterConfiguration {
+/**
+ * This interface describes a package.json debuggers contribution section object.
+ */
+export interface PluginPackageDebuggersContribution extends PlatformSpecificAdapterContribution {
     type: string,
-    request: string,
-    name: string
-    // tslint:disable-next-line:no-any
-    [key: string]: any
+    label?: string,
+    languages?: string[],
+    enableBreakpointsFor?: { languageIds: string[] },
+    configurationAttributes: { [request: string]: IJSONSchema },
+    configurationSnippets: IJSONSchemaSnippet[],
+    variables?: ScopeMap,
+    adapterExecutableCommand?: string
+    win?: PlatformSpecificAdapterContribution;
+    winx86?: PlatformSpecificAdapterContribution;
+    windows?: PlatformSpecificAdapterContribution;
+    osx?: PlatformSpecificAdapterContribution;
+    linux?: PlatformSpecificAdapterContribution;
 }
 
 /**

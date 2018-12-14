@@ -21,7 +21,7 @@ import { createAPIFactory } from '../../plugin/plugin-context';
 import { EnvExtImpl } from '../../plugin/env';
 import { PreferenceRegistryExtImpl } from '../../plugin/preference-registry';
 import { ExtPluginApi } from '../../common/plugin-ext-api-contribution';
-import { DebugExtImpl } from '../../plugin/node/debug';
+import { DebugExtImpl } from '../../plugin/node/debug/debug';
 
 /**
  * Handle the RPC calls.

@@ -20,6 +20,7 @@ import { DebugAdapterExecutable, DebugAdapterContribution } from '../debug-model
 import { isWindows, isOSX } from '@theia/core/lib/common/os';
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 import { deepClone } from '@theia/core/lib/common/objects';
+import { injectable, unmanaged } from 'inversify';
 
 namespace nls {
     export function localize(key: string, _default: string) {
@@ -74,7 +75,8 @@ export namespace VSCodeDebuggerContribution {
     }
 }
 
-export class VSCodeDebugAdapterContribution implements DebugAdapterContribution {
+@injectable()
+export abstract class AbstractVSCodeDebugAdapterContribution implements DebugAdapterContribution {
 
     protected readonly pckPath: string;
     protected readonly pck: Promise<VSCodeExtensionPackage>;
@@ -84,8 +86,8 @@ export class VSCodeDebugAdapterContribution implements DebugAdapterContribution 
     readonly languages: Promise<string[] | undefined>;
 
     constructor(
-        readonly type: string,
-        readonly extensionPath: string
+        @unmanaged() readonly type: string,
+        @unmanaged() readonly extensionPath: string
     ) {
         this.pckPath = path.join(this.extensionPath, 'package.json');
         this.pck = this.parse();
@@ -235,9 +237,4 @@ export class VSCodeDebugAdapterContribution implements DebugAdapterContribution 
             args
         };
     }
-
-    async getExtensionPackage(): Promise<VSCodeExtensionPackage> {
-        return this.pck;
-    }
-
 }

@@ -16,7 +16,7 @@
 
 import { RPCProtocol } from '../../../api/rpc-protocol';
 import * as theia from '@theia/plugin';
-import { DebugExtImpl } from '../../../plugin/node/debug';
+import { DebugExtImpl } from '../../../plugin/node/debug/debug';
 import { Disposable } from '../../../plugin/types-impl';
 import { PluginPackageDebuggersContribution } from '../../../common';
 

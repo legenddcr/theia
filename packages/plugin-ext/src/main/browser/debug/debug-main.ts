@@ -98,7 +98,8 @@ export class DebugMainImpl implements DebugMain {
     }
 
     async $registerDebugConfigurationProvider(contributorId: string, description: DebuggerDescription): Promise<void> {
-        const proxyContributor = new PluginDebugContributor(description,
+        const proxyContributor = new PluginDebugContributor(
+            description,
             contributorId,
             this.debugExt,
             this.labelProvider,

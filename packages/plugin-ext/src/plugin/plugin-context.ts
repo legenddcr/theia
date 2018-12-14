@@ -107,7 +107,7 @@ import { TreeViewsExtImpl } from './tree/tree-views';
 import { ConnectionExtImpl } from './connection-ext';
 import { WebviewsExtImpl } from './webviews';
 import { TasksExtImpl } from './tasks/tasks';
-import { DebugExtImpl } from './node/debug';
+import { DebugExtImpl } from './node/debug/debug';
 import { PluginPackageDebuggersContribution } from '../common';
 
 export function createAPIFactory(
