@@ -22,7 +22,7 @@ import {
     TaskExecutionDto
 } from '../../api/plugin-api';
 import * as theia from '@theia/plugin';
-import * as Converter from '../type-converters';
+import * as converter from '../type-converters';
 import { Disposable } from '../types-impl';
 import { RPCProtocol } from '../../api/rpc-protocol';
 import { TaskProviderAdapter } from './task-provider';
@@ -100,7 +100,7 @@ export class TasksExtImpl implements TasksExt {
         }
 
         result = {
-            task: Converter.toTask(execution.task),
+            task: converter.toTask(execution.task),
             terminate: () => {
                 this.proxy.$terminateTask(executionId);
             }

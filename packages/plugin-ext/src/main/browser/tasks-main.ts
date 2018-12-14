@@ -47,7 +47,7 @@ export class TasksMainImpl implements TasksMain {
         this.taskWatcher = container.get(TaskWatcher);
         this.taskService = container.get(TaskService);
 
-        this.workspaceService.roots.then(async roots => {
+        this.workspaceService.roots.then(roots => {
             const root = roots[0];
             if (root) {
                 this.workspaceRootUri = root.uri;
