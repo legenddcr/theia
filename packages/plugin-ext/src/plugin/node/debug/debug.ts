@@ -31,7 +31,7 @@ import {
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 import { DebuggerDescription } from '@theia/debug/lib/common/debug-service';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { PluginPackageDebuggersContribution } from '../../../common';
+import { DebuggerContribution } from '../../../common';
 import { DebugAdapterSessionImpl } from '@theia/debug/lib/node/debug-adapter-session';
 import { ChildProcess, spawn, fork } from 'child_process';
 import { ConnectionExtImpl } from '../../connection-ext';
@@ -113,19 +113,19 @@ export class DebugExtImpl implements DebugExt {
     registerDebugConfigurationProvider(
         debugType: string,
         provider: theia.DebugConfigurationProvider,
-        packageContribution: PluginPackageDebuggersContribution,
+        debuggerContribution: DebuggerContribution,
         pluginPath: string): Disposable {
 
         const contributionId = uuid.v4();
-        const contribution = new PluginDebugAdapterContribution(
+        const adapterContribution = new PluginDebugAdapterContribution(
             debugType,
             provider,
-            packageContribution,
+            debuggerContribution,
             this.commandRegistryExt,
             pluginPath);
-        this.contributions.set(contributionId, contribution);
+        this.contributions.set(contributionId, adapterContribution);
 
-        const description: DebuggerDescription = { type: debugType, label: packageContribution.label || debugType };
+        const description: DebuggerDescription = { type: debugType, label: debuggerContribution.label || debugType };
         this.proxy.$registerDebugConfigurationProvider(contributionId, description);
 
         return Disposable.create(() => {

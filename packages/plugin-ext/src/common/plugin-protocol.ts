@@ -110,14 +110,14 @@ export interface PlatformSpecificAdapterContribution {
  * This interface describes a package.json debuggers contribution section object.
  */
 export interface PluginPackageDebuggersContribution extends PlatformSpecificAdapterContribution {
-    type: string,
-    label?: string,
-    languages?: string[],
-    enableBreakpointsFor?: { languageIds: string[] },
-    configurationAttributes: { [request: string]: IJSONSchema },
-    configurationSnippets: IJSONSchemaSnippet[],
-    variables?: ScopeMap,
-    adapterExecutableCommand?: string
+    type: string;
+    label?: string;
+    languages?: string[];
+    enableBreakpointsFor?: { languageIds: string[] };
+    configurationAttributes: { [request: string]: IJSONSchema };
+    configurationSnippets: IJSONSchemaSnippet[];
+    variables?: ScopeMap;
+    adapterExecutableCommand?: string;
     win?: PlatformSpecificAdapterContribution;
     winx86?: PlatformSpecificAdapterContribution;
     windows?: PlatformSpecificAdapterContribution;
@@ -338,6 +338,7 @@ export interface PluginContribution {
     views?: { [location: string]: View[] };
     menus?: { [location: string]: Menu[] };
     keybindings?: Keybinding[];
+    debuggers?: DebuggerContribution[];
 }
 
 export interface GrammarsContribution {
@@ -372,6 +373,27 @@ export interface LanguageConfiguration {
     comments?: CommentRule;
     folding?: FoldingRules;
     wordPattern?: string;
+}
+
+/**
+ * This interface describes a package.json debuggers contribution section object.
+ */
+export interface DebuggerContribution extends PlatformSpecificAdapterContribution {
+    type: string,
+    label?: string,
+    languages?: string[],
+    enableBreakpointsFor?: {
+        languageIds: string[]
+    },
+    configurationAttributes?: IJSONSchema[],
+    configurationSnippets?: IJSONSchemaSnippet[],
+    variables?: ScopeMap,
+    adapterExecutableCommand?: string
+    win?: PlatformSpecificAdapterContribution;
+    winx86?: PlatformSpecificAdapterContribution;
+    windows?: PlatformSpecificAdapterContribution;
+    osx?: PlatformSpecificAdapterContribution;
+    linux?: PlatformSpecificAdapterContribution;
 }
 
 export interface IndentationRules {

@@ -108,7 +108,7 @@ import { ConnectionExtImpl } from './connection-ext';
 import { WebviewsExtImpl } from './webviews';
 import { TasksExtImpl } from './tasks/tasks';
 import { DebugExtImpl } from './node/debug/debug';
-import { PluginPackageDebuggersContribution } from '../common';
+import { DebuggerContribution } from '../common';
 
 export function createAPIFactory(
     rpc: RPCProtocol,
@@ -513,9 +513,9 @@ export function createAPIFactory(
                 return debugExt.onDidChangeBreakpoints;
             },
             registerDebugConfigurationProvider(debugType: string, provider: theia.DebugConfigurationProvider): Disposable {
-                const debuggersContribution = plugin.rawModel.contributes && plugin.rawModel.contributes.debuggers;
+                const debuggersContribution = plugin.model.contributes && plugin.model.contributes.debuggers;
                 if (debuggersContribution) {
-                    const contribution = debuggersContribution.filter((value: PluginPackageDebuggersContribution) => value.type === debugType)[0];
+                    const contribution = debuggersContribution.filter((value: DebuggerContribution) => value.type === debugType)[0];
                     if (contribution) {
                         console.info(`Registered debug contribution provider: '${debugType}'`);
                         return debugExt.registerDebugConfigurationProvider(debugType, provider, contribution, plugin.pluginFolder);

@@ -17,7 +17,7 @@
 import * as theia from '@theia/plugin';
 import * as path from 'path';
 import { DebugConfiguration } from '@theia/debug/lib/common/debug-configuration';
-import { PluginPackageDebuggersContribution, PlatformSpecificAdapterContribution } from '../../../common';
+import { PlatformSpecificAdapterContribution, DebuggerContribution } from '../../../common';
 import { DebugAdapterExecutable } from '@theia/debug/lib/node/debug-model';
 import { CommandRegistryImpl } from '../../command-registry';
 import { IJSONSchemaSnippet, IJSONSchema } from '@theia/core/lib/common/json-schema';
@@ -27,7 +27,7 @@ export class PluginDebugAdapterContribution {
     constructor(
         protected readonly debugType: string,
         protected readonly provider: theia.DebugConfigurationProvider,
-        protected readonly packageContribution: PluginPackageDebuggersContribution,
+        protected readonly debuggerContribution: DebuggerContribution,
         protected readonly commandRegistryExt: CommandRegistryImpl,
         protected readonly pluginPath: string) {
     }
@@ -49,26 +49,26 @@ export class PluginDebugAdapterContribution {
     }
 
     async getSupportedLanguages(): Promise<string[]> {
-        return this.packageContribution.languages || [];
+        return this.debuggerContribution.languages || [];
     }
 
     async provideDebugAdapterExecutable(debugConfiguration: theia.DebugConfiguration): Promise<DebugAdapterExecutable> {
-        if (this.packageContribution.adapterExecutableCommand) {
-            return await this.commandRegistryExt.executeCommand(this.packageContribution.adapterExecutableCommand, []) as DebugAdapterExecutable;
+        if (this.debuggerContribution.adapterExecutableCommand) {
+            return await this.commandRegistryExt.executeCommand(this.debuggerContribution.adapterExecutableCommand, []) as DebugAdapterExecutable;
         }
 
-        const info = this.toPlatformInfo(this.packageContribution);
-        let program = (info && info.program || this.packageContribution.program);
+        const info = this.toPlatformInfo(this.debuggerContribution);
+        let program = (info && info.program || this.debuggerContribution.program);
         if (!program) {
             throw new Error('It is not possible to provide debug adapter executable. Program not found.');
         }
         program = path.join(this.pluginPath, program);
-        const programArgs = info && info.args || this.packageContribution.args || [];
-        let runtime = info && info.runtime || this.packageContribution.runtime;
+        const programArgs = info && info.args || this.debuggerContribution.args || [];
+        let runtime = info && info.runtime || this.debuggerContribution.runtime;
         if (runtime && runtime.indexOf('./') === 0) {
             runtime = path.join(this.pluginPath, runtime);
         }
-        const runtimeArgs = info && info.runtimeArgs || this.packageContribution.runtimeArgs || [];
+        const runtimeArgs = info && info.runtimeArgs || this.debuggerContribution.runtimeArgs || [];
         const command = runtime ? runtime : program;
         const args = runtime ? [...runtimeArgs, program, ...programArgs] : programArgs;
         return {
@@ -78,19 +78,14 @@ export class PluginDebugAdapterContribution {
     }
 
     async getSchemaAttributes(): Promise<IJSONSchema[]> {
-        const configurationSnippets = this.packageContribution.configurationSnippets;
-        if (configurationSnippets) {
-            return [];
-        }
-
-        return Object.keys(configurationSnippets).map(request => configurationSnippets[request]);
+        return this.debuggerContribution.configurationSnippets || [];
     }
 
     async getConfigurationSnippets(): Promise<IJSONSchemaSnippet[]> {
-        return this.packageContribution.configurationSnippets || [];
+        return this.debuggerContribution.configurationSnippets || [];
     }
 
-    protected toPlatformInfo(executable: PluginPackageDebuggersContribution): PlatformSpecificAdapterContribution | undefined {
+    protected toPlatformInfo(executable: DebuggerContribution): PlatformSpecificAdapterContribution | undefined {
         if (isWindows && !process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432')) {
             return executable.winx86 || executable.win || executable.windows;
         }
