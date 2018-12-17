@@ -38,8 +38,10 @@ export class CommandRegistryMainImpl implements CommandRegistryMain {
                 execute: (...args: any[]) => {
                     this.proxy.$executeCommand(command.id, ...args);
                 },
+                // enabled and not visible means that the command can be executed programmatically
+                // but it's not visible in the menus
                 isEnabled() { return true; },
-                isVisible() { return true; }
+                isVisible() { return false; }
             }));
     }
     $unregisterCommand(id: string): void {

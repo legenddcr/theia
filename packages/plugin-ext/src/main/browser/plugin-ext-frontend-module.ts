@@ -40,6 +40,8 @@ import { PluginExtDeployCommandService } from './plugin-ext-deploy-command';
 import { TextEditorService, TextEditorServiceImpl } from './text-editor-service';
 import { EditorModelService, EditorModelServiceImpl } from './text-editor-model-service';
 import { UntitledResourceResolver } from './editor/untitled-resource';
+import { IContextKeyService } from './menus/contextkey/common/contextkey';
+import { ContextKeyService } from './menus/contextkey/browser/contextKeyService';
 import { MenusContributionPointHandler } from './menus/menus-contribution-handler';
 import { PluginContributionHandler } from './plugin-contribution-handler';
 import { ViewRegistry } from './view/view-registry';
@@ -102,4 +104,6 @@ export default new ContainerModule(bind => {
     bind(TextContentResourceResolver).toSelf().inSingletonScope();
     bind(ResourceResolver).toService(TextContentResourceResolver);
     bindContributionProvider(bind, MainPluginApiProvider);
+
+    bind(IContextKeyService).to(ContextKeyService).inSingletonScope();
 });

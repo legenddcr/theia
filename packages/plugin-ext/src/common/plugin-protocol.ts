@@ -75,6 +75,7 @@ export interface PluginPackageView {
 export interface PluginPackageMenu {
     command: string;
     group?: string;
+    when?: string;
 }
 
 export interface PluginPackageGrammarsContribution {
@@ -386,6 +387,7 @@ export interface View {
 export interface Menu {
     command: string;
     group?: string;
+    when?: string;
 }
 
 /**

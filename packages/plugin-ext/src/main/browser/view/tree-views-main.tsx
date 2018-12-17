@@ -39,6 +39,7 @@ import { TreeViewItem, TreeViewItemCollapsibleState } from '../../../api/plugin-
 import { MenuPath } from '@theia/core/lib/common/menu';
 import * as ReactDOM from 'react-dom';
 import * as React from 'react';
+import { IContextKeyService, IContextKey } from '../menus/contextkey/common/contextkey';
 
 export const TREE_NODE_HYPERLINK = 'theia-TreeNodeHyperlink';
 export const VIEW_ITEM_CONTEXT_MENU: MenuPath = ['view-item-context-menu'];
@@ -57,9 +58,16 @@ export class TreeViewsMainImpl implements TreeViewsMain {
 
     private viewRegistry: ViewRegistry;
 
+    protected contextKeyService: IContextKeyService;
+    protected viewKey: IContextKey<string>;
+    protected viewItemKey: IContextKey<string>;
+
     constructor(rpc: RPCProtocol, private container: interfaces.Container) {
         this.proxy = rpc.getProxy(MAIN_RPC_CONTEXT.TREE_VIEWS_EXT);
         this.viewRegistry = container.get(ViewRegistry);
+
+        this.viewKey = this.contextKeyService.createKey('view', '');
+        this.viewItemKey = this.contextKeyService.createKey('viewItem', '');
     }
 
     $registerTreeDataProvider(treeViewId: string): void {
@@ -119,7 +127,13 @@ export class TreeViewsMainImpl implements TreeViewsMain {
         treeViewWidget.model.onSelectionChanged(event => {
             if (event.length === 1) {
                 this.proxy.$setSelection(treeViewId, event[0].id);
+
+                this.viewItemKey.set(event[0].id);
+            } else {
+                this.viewItemKey.set('');
             }
+
+            this.viewKey.set(treeViewId);
         });
     }
 
