@@ -66,8 +66,10 @@ export class TreeViewsMainImpl implements TreeViewsMain {
         this.proxy = rpc.getProxy(MAIN_RPC_CONTEXT.TREE_VIEWS_EXT);
         this.viewRegistry = container.get(ViewRegistry);
 
-        this.viewKey = this.contextKeyService.createKey('view', '');
-        this.viewItemKey = this.contextKeyService.createKey('viewItem', '');
+        this.contextKeyService = this.container.get(IContextKeyService);
+        const ctxSvc = this.contextKeyService.createScoped();
+        this.viewKey = ctxSvc.createKey('view', '');
+        this.viewItemKey = ctxSvc.createKey('viewItem', '');
     }
 
     $registerTreeDataProvider(treeViewId: string): void {
@@ -126,9 +128,11 @@ export class TreeViewsMainImpl implements TreeViewsMain {
 
         treeViewWidget.model.onSelectionChanged(event => {
             if (event.length === 1) {
-                this.proxy.$setSelection(treeViewId, event[0].id);
+                const [id, contextValue] = event[0].id.split('/');
 
-                this.viewItemKey.set(event[0].id);
+                this.proxy.$setSelection(treeViewId, id);
+
+                this.viewItemKey.set(contextValue);
             } else {
                 this.viewItemKey.set('');
             }

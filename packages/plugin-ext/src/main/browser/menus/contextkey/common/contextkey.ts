@@ -20,7 +20,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from '@theia/core/lib/common';
-import { isFalsyOrWhitespace } from 'vs/base/common/strings';
 
 export const enum ContextKeyExprType {
     Defined = 1,
@@ -116,7 +115,8 @@ export abstract class ContextKeyExpr {
 
     private static _deserializeRegexValue(serializedValue: string): RegExp | undefined {
 
-        if (isFalsyOrWhitespace(serializedValue)) {
+        // if (isFalsyOrWhitespace(serializedValue)) {
+        if (serializedValue.trim().length === 0) {
             console.warn('missing regexp-value for =~-expression');
             return undefined;
         }
