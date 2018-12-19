@@ -41,6 +41,7 @@ export class CommandRegistryMainImpl implements CommandRegistryMain {
                 // enabled and not visible means that the command can be executed programmatically
                 // but it's not visible in the menus
                 isEnabled() { return true; },
+                // Shouldn't be visible. Visibility is regulated by related contributions via `menus` contribution points.
                 isVisible() { return false; }
             }));
     }

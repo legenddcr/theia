@@ -67,9 +67,8 @@ export class TreeViewsMainImpl implements TreeViewsMain {
         this.viewRegistry = container.get(ViewRegistry);
 
         this.contextKeyService = this.container.get(IContextKeyService);
-        const ctxSvc = this.contextKeyService.createScoped();
-        this.viewKey = ctxSvc.createKey('view', '');
-        this.viewItemKey = ctxSvc.createKey('viewItem', '');
+        this.viewKey = this.contextKeyService.createKey('view', '');
+        this.viewItemKey = this.contextKeyService.createKey('viewItem', '');
     }
 
     $registerTreeDataProvider(treeViewId: string): void {

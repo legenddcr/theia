@@ -159,8 +159,7 @@ class TreeViewExtImpl<T> extends Disposable {
 
     /** Note, the generated ID is used to store an item's `contextValue`. */
     generateId(item: TreeItem): string {
-        this.idCounter++;
-        return `item-${this.idCounter}/${item.contextValue || ''}`;
+        return `item-${this.idCounter++}/${item.contextValue || ''}`;
     }
 
     async getChildren(treeItemId: string): Promise<TreeViewItem[] | undefined> {

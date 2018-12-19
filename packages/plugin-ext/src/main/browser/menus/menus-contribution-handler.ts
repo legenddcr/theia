@@ -103,6 +103,7 @@ export class MenusContributionPointHandler {
         this.commands.registerHandler(menu.command, this.newHandler(menu));
     }
 
+    /** Creates a command handler that allows a related menu item to be visible depending on the current context. */
     protected newHandler(menu: Menu): CommandHandler {
         return {
             execute: () => undefined,

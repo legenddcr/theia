@@ -19,12 +19,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Event, Emitter, DisposableCollection } from '@theia/core/lib/common';
+import { injectable, unmanaged, inject } from 'inversify';
+import { PreferenceService } from '@theia/core/lib/browser';
+import { Event, Emitter, DisposableCollection, Disposable } from '@theia/core/lib/common';
 import {
     ContextKeyExpr, IContext, IContextKey, IContextKeyChangeEvent,
     IContextKeyService, IContextKeyServiceTarget, IReadableSet
 } from '../common/contextkey';
-import { injectable, unmanaged } from 'inversify';
 
 const KEYBINDING_CONTEXT_ATTR = 'data-keybinding-context';
 
@@ -108,93 +109,91 @@ class NullContext extends Context {
     }
 }
 
-// class ConfigAwareContextValuesContainer extends Context {
+class ConfigAwareContextValuesContainer extends Context {
 
-//     private static _keyPrefix = 'config.';
+    private static _keyPrefix = 'config.';
 
-//     // tslint:disable-next-line:no-any
-//     private readonly _values = new Map<string, any>();
-//     private readonly _listener: Disposable;
+    // tslint:disable-next-line:no-any
+    private readonly _values = new Map<string, any>();
+    private readonly _listener: Disposable;
 
-//     constructor(
-//         id: number,
-//         private readonly _configurationService: IConfigurationService,
-//         emitter: Emitter<string | string[]>
-//     ) {
-//         super(id, undefined);
+    constructor(
+        id: number,
+        private readonly _configurationService: PreferenceService,
+        emitter: Emitter<string | string[]>
+    ) {
+        super(id, undefined);
 
-//         // tslint:disable-next-line:no-any
-//         this._listener = this._configurationService.onDidChangeConfiguration((event: { source: any; affectedKeys: any; }) => {
-//             if (event.source === ConfigurationTarget.DEFAULT) {
-//                 // new setting, reset everything
-//                 const allKeys = keys(this._values);
-//                 this._values.clear();
-//                 emitter.fire(allKeys);
-//             } else {
-//                 const changedKeys: string[] = [];
-//                 for (const configKey of event.affectedKeys) {
-//                     const contextKey = `config.${configKey}`;
-//                     if (this._values.has(contextKey)) {
-//                         this._values.delete(contextKey);
-//                         changedKeys.push(contextKey);
-//                     }
-//                 }
-//                 emitter.fire(changedKeys);
-//             }
-//         });
-//     }
+        // tslint:disable-next-line:no-any
+        this._listener = this._configurationService.onPreferenceChanged(event => {
+            // if (event.source === ConfigurationTarget.DEFAULT) {
+            //     // new setting, reset everything
+            //     const allKeys = keys(this._values);
+            //     this._values.clear();
+            //     emitter.fire(allKeys);
+            // } else {
+            const changedKeys: string[] = [];
+            const contextKey = `config.${event.preferenceName}`;
+            if (this._values.has(contextKey)) {
+                this._values.delete(contextKey);
+                changedKeys.push(contextKey);
+            }
+            emitter.fire(changedKeys);
+            // }
+        });
+    }
 
-//     dispose(): void {
-//         this._listener.dispose();
-//     }
+    dispose(): void {
+        this._listener.dispose();
+    }
 
-//     // tslint:disable-next-line:no-any
-//     getValue(key: string): any {
+    // tslint:disable-next-line:no-any
+    getValue(key: string): any {
 
-//         if (key.indexOf(ConfigAwareContextValuesContainer._keyPrefix) !== 0) {
-//             return super.getValue(key);
-//         }
+        if (key.indexOf(ConfigAwareContextValuesContainer._keyPrefix) !== 0) {
+            return super.getValue(key);
+        }
 
-//         if (this._values.has(key)) {
-//             return this._values.get(key);
-//         }
+        if (this._values.has(key)) {
+            return this._values.get(key);
+        }
 
-//         const configKey = key.substr(ConfigAwareContextValuesContainer._keyPrefix.length);
-//         const configValue = this._configurationService.getValue(configKey);
-//         // tslint:disable-next-line:no-any
-//         let value: any = undefined;
-//         switch (typeof configValue) {
-//             case 'number':
-//             case 'boolean':
-//             case 'string':
-//                 value = configValue;
-//                 break;
-//         }
+        const configKey = key.substr(ConfigAwareContextValuesContainer._keyPrefix.length);
+        const configValue = this._configurationService.get(configKey);
+        // tslint:disable-next-line:no-any
+        let value: any = undefined;
+        switch (typeof configValue) {
+            case 'number':
+            case 'boolean':
+            case 'string':
+                value = configValue;
+                break;
+        }
 
-//         this._values.set(key, value);
-//         return value;
-//     }
+        this._values.set(key, value);
+        return value;
+    }
 
-//     // tslint:disable-next-line:no-any
-//     setValue(key: string, value: any): boolean {
-//         return super.setValue(key, value);
-//     }
+    // tslint:disable-next-line:no-any
+    setValue(key: string, value: any): boolean {
+        return super.setValue(key, value);
+    }
 
-//     removeValue(key: string): boolean {
-//         return super.removeValue(key);
-//     }
+    removeValue(key: string): boolean {
+        return super.removeValue(key);
+    }
 
-//     // tslint:disable-next-line:no-any
-//     collectAllValues(): { [key: string]: any; } {
-//         const result: {
-//             // tslint:disable-next-line:no-any
-//             [key: string]: any
-//             // tslint:disable-next-line:no-null-keyword
-//         } = Object.create(null);
-//         this._values.forEach((value, index) => result[index] = value);
-//         return { ...result, ...super.collectAllValues() };
-//     }
-// }
+    // tslint:disable-next-line:no-any
+    collectAllValues(): { [key: string]: any; } {
+        const result: {
+            // tslint:disable-next-line:no-any
+            [key: string]: any
+            // tslint:disable-next-line:no-null-keyword
+        } = Object.create(null);
+        this._values.forEach((value, index) => result[index] = value);
+        return { ...result, ...super.collectAllValues() };
+    }
+}
 
 class ContextKey<T> implements IContextKey<T> {
 
@@ -355,16 +354,16 @@ export class ContextKeyService extends AbstractContextKeyService implements ICon
 
     private _toDispose: DisposableCollection;
 
-    constructor(/*@IConfigurationService configurationService: IConfigurationService*/) {
-        super(1); // TODO: revert back to 0
+    constructor(@inject(PreferenceService) configurationService: PreferenceService) {
+        super(0);
         this._toDispose = new DisposableCollection();
         this._lastContextId = 0;
         // tslint:disable-next-line:no-null-keyword
         this._contexts = Object.create(null);
 
-        // const myContext = new ConfigAwareContextValuesContainer(this._myContextId, configurationService, this._onDidChangeContextKey);
-        // this._contexts[String(this._myContextId)] = myContext;
-        // this._toDispose.push(myContext);
+        const myContext = new ConfigAwareContextValuesContainer(this._myContextId, configurationService, this._onDidChangeContextKey);
+        this._contexts[String(this._myContextId)] = myContext;
+        this._toDispose.push(myContext);
 
         // Uncomment this to see the contexts continuously logged
         // let lastLoggedValue: string | undefined = undefined;
