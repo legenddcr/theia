@@ -50,6 +50,7 @@ export class PluginManagerExtImpl implements PluginManagerExt, PluginManager {
     private registry = new Map<string, Plugin>();
     private activatedPlugins = new Map<string, ActivatedPlugin>();
     private pluginActivationPromises = new Map<string, Deferred<void>>();
+    private pluginContextsMap: Map<string, theia.PluginContext> = new Map();
 
     constructor(private readonly host: PluginHost,
         private readonly envExt: EnvExtImpl,
@@ -104,17 +105,29 @@ export class PluginManagerExtImpl implements PluginManagerExt, PluginManager {
         return Promise.resolve();
     }
 
+    $updateStoragePath(path: string): PromiseLike<void> {
+        this.pluginContextsMap.forEach((pluginContext: theia.PluginContext, pluginId: string) => {
+            pluginContext.storagePath = join(path, pluginId);
+        });
+        return Promise.resolve();
+    }
+
     // tslint:disable-next-line:no-any
     private startPlugin(plugin: Plugin, configStorage: ConfigStorage, pluginMain: any): void {
         const subscriptions: theia.Disposable[] = [];
         const asAbsolutePath = (relativePath: string): string => join(plugin.pluginFolder, relativePath);
         const logPath = join(configStorage.hostLogPath, plugin.model.id); // todo check format
+        const storagePath = join(configStorage.hostStoragePath, plugin.model.id);
         const pluginContext: theia.PluginContext = {
             extensionPath: plugin.pluginFolder,
             subscriptions: subscriptions,
+            globalState: new MementoImpl(),
+            workspaceState: new MementoImpl(),
             asAbsolutePath: asAbsolutePath,
             logPath: logPath,
+            storagePath: storagePath,
         };
+        this.pluginContextsMap.set(plugin.model.id, pluginContext);
 
         let stopFn = undefined;
         if (typeof pluginMain[plugin.lifecycle.stopMethod] === 'function') {
@@ -169,4 +182,18 @@ export class PluginManagerExtImpl implements PluginManagerExt, PluginManager {
 function getGlobal() {
     // tslint:disable-next-line:no-null-keyword
     return typeof self === 'undefined' ? typeof global === 'undefined' ? null : global : self;
+}
+
+class MementoImpl<T> implements theia.Memento {
+    private readonly m = new Map<string, T>();
+
+    get(key: string, defaultValue?: T): T | undefined {
+        const value = this.m.get(key);
+        return value || defaultValue;
+    }
+
+    update(key: string, value: T): PromiseLike<void> {
+        this.m.set(key, value);
+        return Promise.resolve(undefined);
+    }
 }

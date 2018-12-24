@@ -40,6 +40,8 @@ import { PluginExtDeployCommandService } from './plugin-ext-deploy-command';
 import { TextEditorService, TextEditorServiceImpl } from './text-editor-service';
 import { EditorModelService, EditorModelServiceImpl } from './text-editor-model-service';
 import { UntitledResourceResolver } from './editor/untitled-resource';
+import { ContextKeyService } from './context-key/context-key';
+import { ContextKeyServiceImpl } from './context-key/context-key-service';
 import { MenusContributionPointHandler } from './menus/menus-contribution-handler';
 import { PluginContributionHandler } from './plugin-contribution-handler';
 import { ViewRegistry } from './view/view-registry';
@@ -51,6 +53,11 @@ import { LanguageClientProvider } from '@theia/languages/lib/browser/language-cl
 import { LanguageClientProviderImpl } from './language-provider/plugin-language-client-provider';
 import { LanguageClientContributionProviderImpl } from './language-provider/language-client-contribution-provider-impl';
 import { LanguageClientContributionProvider } from './language-provider/language-client-contribution-provider';
+import { StoragePathService } from './storage-path-service';
+import { DebugSessionContributionRegistry } from '@theia/debug/lib/browser/debug-session-contribution';
+import { PluginDebugSessionContributionRegistry } from './debug/plugin-debug-session-contribution-registry';
+import { PluginDebugService } from './debug/plugin-debug-service';
+import { DebugService } from '@theia/debug/lib/common/debug-service';
 
 export default new ContainerModule((bind, unbind, isBound, rebind) => {
     bindHostedPluginPreferences(bind);
@@ -90,6 +97,7 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
         const connection = ctx.container.get(WebSocketConnectionProvider);
         return connection.createProxy<PluginPathsService>(pluginPathsServicePath);
     }).inSingletonScope();
+    bind(StoragePathService).toSelf().inSingletonScope();
 
     bindViewContribution(bind, PluginFrontendViewContribution);
 
@@ -120,4 +128,11 @@ export default new ContainerModule((bind, unbind, isBound, rebind) => {
     bind(LanguageClientContributionProvider).toService(LanguageClientContributionProviderImpl);
     bind(LanguageClientProviderImpl).toSelf().inSingletonScope();
     rebind(LanguageClientProvider).toService(LanguageClientProviderImpl);
+    bind(ContextKeyService).to(ContextKeyServiceImpl).inSingletonScope();
+
+    bind(PluginDebugService).toSelf().inSingletonScope();
+    rebind(DebugService).toService(PluginDebugService);
+
+    bind(PluginDebugSessionContributionRegistry).toSelf().inSingletonScope();
+    rebind(DebugSessionContributionRegistry).toService(PluginDebugSessionContributionRegistry);
 });

@@ -22,10 +22,10 @@ import {
 } from '@theia/languages/lib/browser';
 import { Languages, Workspace } from '@theia/languages/lib/browser';
 import { ILogger } from '@theia/core/lib/common/logger';
-import { MessageService } from '@theia/core/lib/common/message-service';
-import { CPP_LANGUAGE_ID, CPP_LANGUAGE_NAME, HEADER_AND_SOURCE_FILE_EXTENSIONS } from '../common';
+import { CPP_LANGUAGE_ID, CPP_LANGUAGE_NAME, HEADER_AND_SOURCE_FILE_EXTENSIONS, CppStartParameters } from '../common';
 import { CppBuildConfigurationManager, CppBuildConfiguration } from './cpp-build-configurations';
 import { CppBuildConfigurationsStatusBarElement } from './cpp-build-configurations-statusbar-element';
+import { CppPreferences } from './cpp-preferences';
 
 /**
  * Clangd extension to set clangd-specific "initializationOptions" in the
@@ -42,18 +42,22 @@ export class CppLanguageClientContribution extends BaseLanguageClientContributio
     readonly id = CPP_LANGUAGE_ID;
     readonly name = CPP_LANGUAGE_NAME;
 
+    @inject(CppPreferences)
+    protected readonly cppPreferences: CppPreferences;
+
     @inject(CppBuildConfigurationManager)
     protected readonly cppBuildConfigurations: CppBuildConfigurationManager;
 
     @inject(CppBuildConfigurationsStatusBarElement)
     protected readonly cppBuildConfigurationsStatusBarElement: CppBuildConfigurationsStatusBarElement;
 
+    @inject(ILogger)
+    protected readonly logger: ILogger;
+
     constructor(
         @inject(Workspace) protected readonly workspace: Workspace,
         @inject(Languages) protected readonly languages: Languages,
         @inject(LanguageClientFactory) protected readonly languageClientFactory: LanguageClientFactory,
-        @inject(MessageService) protected readonly messageService: MessageService,
-        @inject(ILogger) protected readonly logger: ILogger
     ) {
         super(workspace, languages, languageClientFactory);
     }
@@ -85,7 +89,7 @@ export class CppLanguageClientContribution extends BaseLanguageClientContributio
         // createOptions will be called to send the initialize request
         // to the new instance of clangd.
         if (this.running) {
-          this.restart();
+            this.restart();
         }
     }
 
@@ -126,5 +130,12 @@ export class CppLanguageClientContribution extends BaseLanguageClientContributio
             return false;
         };
         return clientOptions;
+    }
+
+    protected getStartParameters(): CppStartParameters {
+        return {
+            clangdExecutable: this.cppPreferences['cpp.clangdExecutable'],
+            clangdArgs: this.cppPreferences['cpp.clangdArgs']
+        };
     }
 }
