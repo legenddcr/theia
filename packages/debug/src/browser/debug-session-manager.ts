@@ -99,11 +99,11 @@ export class DebugSessionManager {
     @inject(VariableResolverService)
     protected readonly variableResolver: VariableResolverService;
 
-    @inject(MessageService)
-    protected readonly messageService: MessageService;
-
     @inject(DebugSessionContributionRegistry)
     protected readonly sessionContributionRegistry: DebugSessionContributionRegistry;
+
+    @inject(MessageService)
+    protected readonly messageService: MessageService;
 
     @postConstruct()
     protected init(): void {
@@ -117,8 +117,12 @@ export class DebugSessionManager {
             return this.doStart(sessionId, resolved);
         } catch (e) {
             if (DebugError.NotFound.is(e)) {
+                this.messageService.error(`The debug session type "${e.data.type}" is not supported.`);
                 return undefined;
             }
+
+            this.messageService.error('There was an error starting the debug session, check the logs for more details.');
+            console.error('Error starting the debug session', e);
             throw e;
         }
     }

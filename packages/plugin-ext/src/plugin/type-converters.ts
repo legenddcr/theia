@@ -24,6 +24,7 @@ import URI from 'vscode-uri';
 
 const SIDE_GROUP = -2;
 const ACTIVE_GROUP = -1;
+import { SymbolInformation, Range as R, Position as P, SymbolKind as S } from 'vscode-languageserver-types';
 
 export function toViewColumn(ep?: EditorPosition): theia.ViewColumn | undefined {
     if (typeof ep !== 'number') {
@@ -508,9 +509,10 @@ export function fromTask(task: theia.Task): TaskDto | undefined {
     }
 
     taskDto.type = taskDefinition.type;
+    taskDto.properties = {};
     for (const key in taskDefinition) {
-        if (taskDefinition.hasOwnProperty(key)) {
-            taskDto[key] = taskDefinition[key];
+        if (key !== 'type' && taskDefinition.hasOwnProperty(key)) {
+            taskDto.properties[key] = taskDefinition[key];
         }
     }
 
@@ -525,10 +527,47 @@ export function fromTask(task: theia.Task): TaskDto | undefined {
     }
 
     if (taskDefinition.type === 'process') {
-        return fromProcessExecution(<theia.ProcessExecution> execution, processTaskDto);
+        return fromProcessExecution(<theia.ProcessExecution>execution, processTaskDto);
     }
 
     return processTaskDto;
+}
+
+export function toTask(taskDto: TaskDto): theia.Task {
+    if (!taskDto) {
+        throw new Error('Task should be provided for converting');
+    }
+
+    const result = {} as theia.Task;
+    result.name = taskDto.label;
+
+    const taskType = taskDto.type;
+    const taskDefinition: theia.TaskDefinition = {
+        type: taskType
+    };
+
+    result.definition = taskDefinition;
+
+    if (taskType === 'process') {
+        result.execution = getProcessExecution(taskDto as ProcessTaskDto);
+    }
+
+    if (taskType === 'shell') {
+        result.execution = getShellExecution(taskDto as ProcessTaskDto);
+    }
+
+    const properties = taskDto.properties;
+    if (!properties) {
+        return result;
+    }
+
+    for (const key in properties) {
+        if (properties.hasOwnProperty(key)) {
+            taskDefinition[key] = properties[key];
+        }
+    }
+
+    return result;
 }
 
 export function fromProcessExecution(execution: theia.ProcessExecution, processTaskDto: ProcessTaskDto): ProcessTaskDto {
@@ -547,8 +586,7 @@ export function fromShellExecution(execution: theia.ShellExecution, processTaskD
     const options = execution.options;
     if (options) {
         processTaskDto.cwd = options.cwd;
-        processTaskDto.args = options.shellArgs;
-        processTaskDto.options = options;
+        processTaskDto.options = getShellExecutionOptions(options);
     }
 
     const commandLine = execution.commandLine;
@@ -574,6 +612,34 @@ export function fromShellExecution(execution: theia.ShellExecution, processTaskD
     }
 }
 
+export function getProcessExecution(processTaskDto: ProcessTaskDto): theia.ProcessExecution {
+    const execution = {} as theia.ProcessExecution;
+
+    execution.process = processTaskDto.command;
+
+    const processArgs = processTaskDto.args;
+    execution.args = processArgs ? processArgs : [];
+
+    const options = processTaskDto.options;
+    execution.options = options ? options : {};
+    execution.options.cwd = processTaskDto.cwd;
+
+    return execution;
+}
+
+export function getShellExecution(processTaskDto: ProcessTaskDto): theia.ShellExecution {
+    const execution = {} as theia.ShellExecution;
+
+    const options = processTaskDto.options;
+    execution.options = options ? options : {};
+    execution.options.cwd = processTaskDto.cwd;
+    execution.args = processTaskDto.args;
+
+    execution.command = processTaskDto.command;
+
+    return execution;
+}
+
 export function getShellArgs(args: undefined | (string | theia.ShellQuotedString)[]): string[] {
     if (!args || args.length === 0) {
         return [];
@@ -592,4 +658,95 @@ export function getShellArgs(args: undefined | (string | theia.ShellQuotedString
     });
 
     return result;
+}
+
+// tslint:disable-next-line:no-any
+export function getShellExecutionOptions(options: theia.ShellExecutionOptions): { [key: string]: any } {
+    // tslint:disable-next-line:no-any
+    const result = {} as { [key: string]: any };
+
+    const env = options.env;
+    if (env) {
+        result['env'] = env;
+    }
+
+    const executable = options.executable;
+    if (executable) {
+        result['executable'] = executable;
+    }
+
+    const shellQuoting = options.shellQuoting;
+    if (shellQuoting) {
+        result['shellQuoting'] = shellQuoting;
+    }
+
+    const shellArgs = options.shellArgs;
+    if (shellArgs) {
+        result['shellArgs'] = shellArgs;
+    }
+
+    return result;
+}
+
+export function fromSymbolInformation(symbolInformation: theia.SymbolInformation): SymbolInformation | undefined {
+    if (!symbolInformation) {
+        return undefined;
+    }
+
+    if (symbolInformation.location && symbolInformation.location.range) {
+        const p1 = P.create(symbolInformation.location.range.start.line, symbolInformation.location.range.start.character);
+        const p2 = P.create(symbolInformation.location.range.end.line, symbolInformation.location.range.end.character);
+        return SymbolInformation.create(symbolInformation.name, symbolInformation.kind++ as S, R.create(p1, p2),
+            symbolInformation.location.uri.toString(), symbolInformation.containerName);
+    }
+
+    return <SymbolInformation>{
+        name: symbolInformation.name,
+        containerName: symbolInformation.containerName,
+        kind: symbolInformation.kind++ as S,
+        location: {
+            uri: symbolInformation.location.uri.toString()
+        }
+    };
+}
+
+export function toSymbolInformation(symbolInformation: SymbolInformation): theia.SymbolInformation | undefined {
+    if (!symbolInformation) {
+        return undefined;
+    }
+
+    return <theia.SymbolInformation>{
+        name: symbolInformation.name,
+        containerName: symbolInformation.containerName,
+        kind: symbolInformation.kind,
+        location: {
+            uri: URI.parse(symbolInformation.location.uri),
+            range: symbolInformation.location.range
+        }
+    };
+}
+
+export function fromFoldingRange(foldingRange: theia.FoldingRange): model.FoldingRange {
+    const range: model.FoldingRange = {
+        start: foldingRange.start + 1,
+        end: foldingRange.end + 1
+    };
+    if (foldingRange.kind) {
+        range.kind = fromFoldingRangeKind(foldingRange.kind);
+    }
+    return range;
+}
+
+export function fromFoldingRangeKind(kind: theia.FoldingRangeKind | undefined): model.FoldingRangeKind | undefined {
+    if (kind) {
+        switch (kind) {
+            case types.FoldingRangeKind.Comment:
+                return model.FoldingRangeKind.Comment;
+            case types.FoldingRangeKind.Imports:
+                return model.FoldingRangeKind.Imports;
+            case types.FoldingRangeKind.Region:
+                return model.FoldingRangeKind.Region;
+        }
+    }
+    return undefined;
 }

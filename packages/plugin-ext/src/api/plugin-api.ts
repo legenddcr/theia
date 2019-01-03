@@ -54,14 +54,19 @@ import {
     Breakpoint
 } from './model';
 import { ExtPluginApi } from '../common/plugin-ext-api-contribution';
+import { KeysToAnyValues, KeysToKeysToAnyValue } from '../common/types';
 import { CancellationToken, Progress, ProgressOptions } from '@theia/plugin';
 import { IJSONSchema, IJSONSchemaSnippet } from '@theia/core/lib/common/json-schema';
 import { DebuggerDescription } from '@theia/debug/lib/common/debug-service';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
+import { SymbolInformation } from 'vscode-languageserver-types';
+
 export interface PluginInitData {
     plugins: PluginMetadata[];
     preferences: { [key: string]: any };
+    globalState: KeysToKeysToAnyValue;
+    workspaceState: KeysToKeysToAnyValue;
     env: EnvInit;
     extApi?: ExtPluginApi[];
 }
@@ -140,7 +145,7 @@ export interface PluginManagerExt {
 
     $init(pluginInit: PluginInitData, configStorage: ConfigStorage): PromiseLike<void>;
 
-    $updateStoragePath(path: string): PromiseLike<void>;
+    $updateStoragePath(path: string | undefined): PromiseLike<void>;
 }
 
 export interface CommandRegistryMain {
@@ -796,13 +801,19 @@ export interface LanguagesContributionMain {
 export interface CommandProperties {
     command: string;
     args?: string[];
-    options?: object;
+    options?: { [key: string]: any };
 }
+
 export interface TaskDto {
     type: string;
     label: string;
     // tslint:disable-next-line:no-any
-    [key: string]: any;
+    properties?: { [key: string]: any };
+}
+
+export interface TaskExecutionDto {
+    id: number;
+    task: TaskDto;
 }
 
 export interface ProcessTaskDto extends TaskDto, CommandProperties {
@@ -841,6 +852,13 @@ export interface LanguagesExt {
         context: monaco.languages.CodeActionContext
     ): Promise<monaco.languages.CodeAction[]>;
     $provideDocumentSymbols(handle: number, resource: UriComponents): Promise<DocumentSymbol[] | undefined>;
+    $provideWorkspaceSymbols(handle: number, query: string): PromiseLike<SymbolInformation[]>;
+    $resolveWorkspaceSymbol(handle: number, symbol: SymbolInformation): PromiseLike<SymbolInformation>;
+    $provideFoldingRange(
+        handle: number,
+        resource: UriComponents,
+        context: monaco.languages.FoldingContext
+    ): PromiseLike<monaco.languages.FoldingRange[] | undefined>;
 }
 
 export interface LanguagesMain {
@@ -865,6 +883,8 @@ export interface LanguagesMain {
     $registerCodeLensSupport(handle: number, selector: SerializedDocumentFilter[], eventHandle?: number): void;
     $emitCodeLensEvent(eventHandle: number, event?: any): void;
     $registerOutlineSupport(handle: number, selector: SerializedDocumentFilter[]): void;
+    $registerWorkspaceSymbolProvider(handle: number): void;
+    $registerFoldingRangeProvider(handle: number, selector: SerializedDocumentFilter[]): void;
 }
 
 export interface WebviewPanelViewState {
@@ -907,6 +927,16 @@ export interface WebviewsMain {
 
     $registerSerializer(viewType: string): void;
     $unregisterSerializer(viewType: string): void;
+}
+
+export interface StorageMain {
+    $set(key: string, value: KeysToAnyValues, isGlobal: boolean): Promise<boolean>;
+    $get(key: string, isGlobal: boolean): Promise<KeysToAnyValues>;
+    $getAll(isGlobal: boolean): Promise<KeysToKeysToAnyValue>;
+}
+
+export interface StorageExt {
+    $updatePluginsWorkspaceData(data: KeysToKeysToAnyValue): void;
 }
 
 export interface DebugExt {
@@ -953,6 +983,7 @@ export const PLUGIN_RPC_CONTEXT = {
     LANGUAGES_MAIN: createProxyIdentifier<LanguagesMain>('LanguagesMain'),
     CONNECTION_MAIN: createProxyIdentifier<ConnectionMain>('ConnectionMain'),
     WEBVIEWS_MAIN: createProxyIdentifier<WebviewsMain>('WebviewsMain'),
+    STORAGE_MAIN: createProxyIdentifier<StorageMain>('StorageMain'),
     TASKS_MAIN: createProxyIdentifier<TasksMain>('TasksMain'),
     LANGUAGES_CONTRIBUTION_MAIN: createProxyIdentifier<LanguagesContributionMain>('LanguagesContributionMain'),
     DEBUG_MAIN: createProxyIdentifier<DebugMain>('DebugMain')
@@ -974,6 +1005,7 @@ export const MAIN_RPC_CONTEXT = {
     LANGUAGES_EXT: createProxyIdentifier<LanguagesExt>('LanguagesExt'),
     CONNECTION_EXT: createProxyIdentifier<ConnectionExt>('ConnectionExt'),
     WEBVIEWS_EXT: createProxyIdentifier<WebviewsExt>('WebviewsExt'),
+    STORAGE_EXT: createProxyIdentifier<StorageExt>('StorageExt'),
     TASKS_EXT: createProxyIdentifier<TasksExt>('TasksExt'),
     LANGUAGES_CONTRIBUTION_EXT: createProxyIdentifier<LanguagesContributionExt>('LanguagesContributionExt'),
     DEBUG_EXT: createProxyIdentifier<DebugExt>('DebugExt')
@@ -982,9 +1014,11 @@ export const MAIN_RPC_CONTEXT = {
 export interface TasksExt {
     $provideTasks(handle: number): Promise<TaskDto[] | undefined>;
     $resolveTask(handle: number, task: TaskDto): Promise<TaskDto | undefined>;
+    $onDidStartTask(execution: TaskExecutionDto): void;
 }
 
 export interface TasksMain {
     $registerTaskProvider(handle: number, type: string): void;
     $unregister(handle: number): void;
+    $terminateTask(id: number): void;
 }

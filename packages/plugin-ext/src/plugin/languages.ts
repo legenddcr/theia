@@ -69,6 +69,9 @@ import { CodeLensAdapter } from './languages/lens';
 import { CommandRegistryImpl } from './command-registry';
 import { OutlineAdapter } from './languages/outline';
 import { ReferenceAdapter } from './languages/reference';
+import { WorkspaceSymbolAdapter } from './languages/workspace-symbol';
+import { SymbolInformation } from 'vscode-languageserver-types';
+import { FoldingProviderAdapter } from './languages/folding';
 
 type Adapter = CompletionAdapter |
     SignatureHelpAdapter |
@@ -85,7 +88,9 @@ type Adapter = CompletionAdapter |
     CodeActionAdapter |
     OutlineAdapter |
     LinkProviderAdapter |
-    ReferenceAdapter;
+    ReferenceAdapter |
+    WorkspaceSymbolAdapter |
+    FoldingProviderAdapter;
 
 export class LanguagesExtImpl implements LanguagesExt {
 
@@ -289,6 +294,22 @@ export class LanguagesExtImpl implements LanguagesExt {
     }
     // ### Document Highlight Provider end
 
+    // ### WorkspaceSymbol Provider begin
+    registerWorkspaceSymbolProvider(provider: theia.WorkspaceSymbolProvider): theia.Disposable {
+        const callId = this.addNewAdapter(new WorkspaceSymbolAdapter(provider));
+        this.proxy.$registerWorkspaceSymbolProvider(callId);
+        return this.createDisposable(callId);
+    }
+
+    $provideWorkspaceSymbols(handle: number, query: string): PromiseLike<SymbolInformation[]> {
+        return this.withAdapter(handle, WorkspaceSymbolAdapter, adapter => adapter.provideWorkspaceSymbols(query));
+    }
+
+    $resolveWorkspaceSymbol(handle: number, symbol: SymbolInformation): PromiseLike<SymbolInformation> {
+        return this.withAdapter(handle, WorkspaceSymbolAdapter, adapter => adapter.resolveWorkspaceSymbol(symbol));
+    }
+    // ### WorkspaceSymbol Provider end
+
     // ### Document Formatting Edit begin
     registerDocumentFormattingEditProvider(selector: theia.DocumentSelector, provider: theia.DocumentFormattingEditProvider): theia.Disposable {
         const callId = this.addNewAdapter(new DocumentFormattingAdapter(provider, this.documents));
@@ -418,6 +439,21 @@ export class LanguagesExtImpl implements LanguagesExt {
     }
     // ### Document Symbol Provider end
 
+    // ### Folding Range Provider begin
+    registerFoldingRangeProvider(selector: theia.DocumentSelector, provider: theia.FoldingRangeProvider): theia.Disposable {
+        const callId = this.addNewAdapter(new FoldingProviderAdapter(provider, this.documents));
+        this.proxy.$registerFoldingRangeProvider(callId, this.transformDocumentSelector(selector));
+        return this.createDisposable(callId);
+    }
+
+    $provideFoldingRange(
+        callId: number,
+        resource: UriComponents,
+        context: theia.FoldingContext
+    ): Promise<monaco.languages.FoldingRange[] | undefined> {
+        return this.withAdapter(callId, FoldingProviderAdapter, adapter => adapter.provideFoldingRanges(URI.revive(resource), context));
+    }
+    // ### Folging Range Provider end
 }
 
 function serializeEnterRules(rules?: theia.OnEnterRule[]): SerializedOnEnterRule[] | undefined {

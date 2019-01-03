@@ -87,7 +87,9 @@ import {
     Task,
     Breakpoint,
     SourceBreakpoint,
-    FunctionBreakpoint
+    FunctionBreakpoint,
+    FoldingRange,
+    FoldingRangeKind,
 } from './types-impl';
 import { SymbolKind } from '../api/model';
 import { EditorsAndDocumentsExtImpl } from './editors-and-documents';
@@ -457,6 +459,9 @@ export function createAPIFactory(
             registerDocumentHighlightProvider(selector: theia.DocumentSelector, provider: theia.DocumentHighlightProvider): theia.Disposable {
                 return languagesExt.registerDocumentHighlightProvider(selector, provider);
             },
+            registerWorkspaceSymbolProvider(provider: theia.WorkspaceSymbolProvider): theia.Disposable {
+                return languagesExt.registerWorkspaceSymbolProvider(provider);
+            },
             registerDocumentFormattingEditProvider(selector: theia.DocumentSelector, provider: theia.DocumentFormattingEditProvider): theia.Disposable {
                 return languagesExt.registerDocumentFormattingEditProvider(selector, provider);
             },
@@ -485,7 +490,10 @@ export function createAPIFactory(
             },
             registerDocumentSymbolProvider(selector: theia.DocumentSelector, provider: theia.DocumentSymbolProvider): theia.Disposable {
                 return languagesExt.registerDocumentSymbolProvider(selector, provider);
-            }
+            },
+            registerFoldingRangeProvider(selector: theia.DocumentSelector, provider: theia.FoldingRangeProvider): theia.Disposable {
+                return languagesExt.registerFoldingRangeProvider(selector, provider);
+            },
         };
 
         const plugins: typeof theia.plugins = {
@@ -555,6 +563,10 @@ export function createAPIFactory(
         const tasks: typeof theia.tasks = {
             registerTaskProvider(type: string, provider: theia.TaskProvider): theia.Disposable {
                 return tasksExt.registerTaskProvider(type, provider);
+            },
+
+            onDidStartTask(listener, thisArg?, disposables?) {
+                return tasksExt.onDidStartTask(listener, thisArg, disposables);
             }
         };
 
@@ -636,7 +648,9 @@ export function createAPIFactory(
             Task,
             Breakpoint,
             SourceBreakpoint,
-            FunctionBreakpoint
+            FunctionBreakpoint,
+            FoldingRange,
+            FoldingRangeKind,
         };
     };
 }
